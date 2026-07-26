@@ -39,6 +39,8 @@ export interface Commit {
 
 export interface Plan {
 	name: string;
+	/** Directory basename under packages/. */
+	dirName: string;
 	/** Git tag base — the package name with any npm scope stripped, since a
 	 *  slash in a tag is legal but awkward to type and to match. */
 	tagName: string;
@@ -146,6 +148,10 @@ function commitsSince(ref: string | null): Commit[] {
 export function buildPlans(): Plan[] {
 	if (!existsSync(PKG_DIR)) return [];
 	const plans: Plan[] = [];
+	/** package name -> directory basename, for workspace dep resolution. */
+	const nameToDir = new Map<string, string>();
+	/** directory basename -> workspace dependency names. */
+	const deps = new Map<string, string[]>();
 
 	for (const entry of readdirSync(PKG_DIR, { withFileTypes: true })) {
 		if (!entry.isDirectory()) continue;
@@ -159,6 +165,12 @@ export function buildPlans(): Plan[] {
 			private?: boolean;
 		};
 		if (pj.private) continue;
+
+		nameToDir.set(pj.name, entry.name);
+		deps.set(
+			entry.name,
+			Object.keys((pj as { dependencies?: Record<string, string> }).dependencies ?? {}),
+		);
 
 		const lastTag = latestTagFor(pj.name);
 		const prefix = `packages/${entry.name}/`;
@@ -187,6 +199,7 @@ export function buildPlans(): Plan[] {
 
 		plans.push({
 			name: pj.name,
+			dirName: entry.name,
 			tagName: tagNameFor(pj.name),
 			dir,
 			current: pj.version,
@@ -197,6 +210,32 @@ export function buildPlans(): Plan[] {
 			reason,
 		});
 	}
+
+	// Propagate shared-package releases to their dependents.
+	//
+	// Path attribution alone misses this: editing packages/telemetry does not
+	// touch packages/hashline, yet a hashline release must go out for consumers
+	// to receive the change. Resolved to a fixed point so a chain of internal
+	// dependencies propagates fully.
+	const byName = new Map(plans.map((p) => [p.name, p]));
+	let changed = true;
+	while (changed) {
+		changed = false;
+		for (const plan of plans) {
+			if (plan.next) continue; // already releasing
+			const myDeps = deps.get(plan.dirName) ?? [];
+			const releasingDep = myDeps
+				.map((d) => byName.get(d))
+				.find((d) => d?.next);
+			if (releasingDep) {
+				plan.bump = "patch";
+				plan.next = applyBump(plan.current, "patch");
+				plan.reason = `dependency ${releasingDep.tagName} releases ${releasingDep.next}`;
+				changed = true;
+			}
+		}
+	}
+
 	return plans;
 }
 

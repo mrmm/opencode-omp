@@ -9,6 +9,7 @@ rather than reimplementing them.
 |---|---|---|
 | [`@mrmm/opencode-omp-hashline`](packages/hashline) | File-hash-anchored patch editing | **~400 KB** (native-free) |
 | [`@mrmm/opencode-omp-snapcompact`](packages/snapcompact) | Density-gated bitmap context compression | ~180 MB (needs the native rasterizer) |
+| [`@mrmm/opencode-omp-telemetry`](packages/telemetry) | Shared local-first telemetry | 0 deps |
 
 Separate packages so hashline users never pull snapcompact's 139 MB native addon.
 
@@ -109,6 +110,28 @@ bun add @mrmm/opencode-omp-hashline
 
 If you are running the broken `opencode-hashline`, remove it — the two annotate the
 same reads and will fight.
+
+## Telemetry
+
+Both plugins record usage locally so their design assumptions can be checked
+against reality — the density thresholds and overhead comparisons here were
+derived from synthetic corpora, and only real data confirms them.
+
+**Local JSONL by default. No network code, enforced by test.** OpenTelemetry is
+supported through an optional peer dependency, so you can route to any backend
+without this repository implementing transport.
+
+```sh
+bun scripts/telemetry-report.ts     # counters, percentiles, derived findings
+```
+
+Disable anywhere:
+
+```jsonc
+["@mrmm/opencode-omp-hashline", { "telemetry": false }]
+```
+
+See [packages/telemetry](packages/telemetry) for the full contract.
 
 ## Development
 

@@ -47,7 +47,8 @@
     "test": "bun test"
   },
   "dependencies": {
-    "@oh-my-pi/hashline": "^17.1.3"
+    "@oh-my-pi/hashline": "^17.1.3",
+    "@mrmm/opencode-omp-telemetry": "workspace:*"
   },
   "peerDependencies": {
     "@opencode-ai/plugin": ">=1.17.0"

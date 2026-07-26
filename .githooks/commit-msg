@@ -25,7 +25,10 @@ case "$HEADER" in
 esac
 
 TYPES='feat|fix|perf|revert|docs|style|refactor|test|build|ci|chore'
-SCOPES='hashline|snapcompact|repo|ci|docs|deps|release'
+# Package scopes are derived from packages/ so the list cannot drift as
+# packages are added. Non-package scopes are appended.
+PKG_SCOPES="$(ls -1 packages 2>/dev/null | tr '\n' '|' | sed 's/|$//')"
+SCOPES="${PKG_SCOPES:+$PKG_SCOPES|}repo|ci|docs|deps|release|telemetry"
 
 if [[ ! "$HEADER" =~ ^($TYPES)(\([a-z0-9,-]+\))?!?:\ .+ ]]; then
   echo -e "${RED}✗${RST} Commit message is not a Conventional Commit.\n"

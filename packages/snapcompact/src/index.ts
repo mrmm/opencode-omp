@@ -19,6 +19,7 @@ import { isAbsolute, relative, resolve } from "node:path";
 
 import type { Plugin } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin";
+import { createTelemetry } from "@mrmm/opencode-omp-telemetry";
 
 import { resolveConfig, type SnapcompactConfig } from "./config.ts";
 import { density, shouldCompact, type Decision } from "./density.ts";
@@ -30,6 +31,9 @@ import {
 	toAttachments,
 	type ModelRef,
 } from "./render.ts";
+
+/** Kept in step with package.json by the release tooling. */
+const PKG_VERSION = "0.2.0";
 
 function pct(n: number): string {
 	return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
@@ -61,6 +65,12 @@ export function createSnapcompactPlugin(
 		const log = (...a: unknown[]) => {
 			if (cfg.debug) console.error("[omp-snapcompact]", ...a);
 		};
+
+		const tel = createTelemetry({
+			service: "opencode-omp-snapcompact",
+			serviceVersion: PKG_VERSION,
+			config: cfg.telemetry,
+		});
 
 		log("config", JSON.stringify(cfg));
 
@@ -143,6 +153,23 @@ export function createSnapcompactPlugin(
 
 					if (!decision.compact) {
 						const d = decision.density;
+						// The real-world density distribution. The gate's thresholds
+						// were calibrated on synthetic corpora; these are the numbers
+						// that confirm or refute that calibration.
+						tel.count("snapcompact.gate.declined", 1, { reason: decision.reason });
+						if (d) {
+							tel.histogram("snapcompact.density.chars_per_token", d.ratio, {
+								decision: "declined",
+							});
+							tel.histogram("snapcompact.input.chars", d.chars, { decision: "declined" });
+						}
+						if (typeof decision.estimatedSavingPct === "number") {
+							tel.histogram(
+								"snapcompact.projected_saving_pct",
+								decision.estimatedSavingPct,
+								{ decision: "declined" },
+							);
+						}
 						return {
 							title: `${cfg.toolPrefix}: declined (${decision.reason})`,
 							output: [
@@ -159,11 +186,29 @@ export function createSnapcompactPlugin(
 						};
 					}
 
+					const stopRender = tel.timer("snapcompact.render.duration_ms");
 					const frames = await renderFrames(text, model, budget);
 					const attachments = toAttachments(frames);
+					stopRender({ frames: frames.length });
 					const bytes = frames.reduce((s, f) => s + frameBytes(f), 0);
 					const imageTokens = frames.length * econ.frameTokens;
 					const saving = 100 * (1 - imageTokens / decision.density.tokens);
+
+					tel.count("snapcompact.gate.compacted", 1, { forced: forced });
+					tel.histogram("snapcompact.density.chars_per_token", decision.density.ratio, {
+						decision: "compacted",
+					});
+					tel.histogram("snapcompact.input.chars", decision.density.chars, {
+						decision: "compacted",
+					});
+					tel.histogram("snapcompact.frames", frames.length);
+					tel.histogram("snapcompact.payload_bytes", bytes);
+					// Projected vs realised: drift here means the estimate is wrong.
+					tel.histogram("snapcompact.actual_saving_pct", saving, { decision: "compacted" });
+					tel.histogram(
+						"snapcompact.saving_estimate_error_pct",
+						saving - decision.estimatedSavingPct,
+					);
 
 					ctx.metadata({
 						title: `${cfg.toolPrefix}: ${frames.length} frame(s), ${pct(saving)}`,
@@ -210,6 +255,12 @@ export function createSnapcompactPlugin(
 						margin: cfg.densityMargin,
 						minChars: cfg.minChars,
 						maxFrames: cfg.maxFrames ?? budgetFor(model),
+					});
+					tel.count("snapcompact.estimate", 1, {
+						would_compact: decision.compact,
+					});
+					tel.histogram("snapcompact.density.chars_per_token", d.ratio, {
+						decision: "estimate",
 					});
 					const verdict = decision.compact
 						? `WOULD COMPACT — projected ${pct(decision.estimatedSavingPct)} across ${decision.estimatedFrames} frame(s)`

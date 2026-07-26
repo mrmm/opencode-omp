@@ -1,6 +1,9 @@
-import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import {
+	DEFAULT_TELEMETRY_CONFIG,
+	layeredConfig,
+	sanitizeTelemetryConfig,
+	type TelemetryConfig,
+} from "@mrmm/opencode-omp-telemetry";
 
 export type SnapcompactMode = "tool" | "auto-compact";
 
@@ -31,6 +34,8 @@ export interface SnapcompactConfig {
 	/** Allow callers to pass force:true and bypass the density gate. */
 	allowForce: boolean;
 	debug: boolean;
+	/** Usage telemetry. Local JSONL by default; see the telemetry package. */
+	telemetry: TelemetryConfig;
 }
 
 export const DEFAULT_CONFIG: SnapcompactConfig = {
@@ -45,59 +50,10 @@ export const DEFAULT_CONFIG: SnapcompactConfig = {
 	toolPrefix: "snapcompact",
 	allowForce: true,
 	debug: false,
+	telemetry: DEFAULT_TELEMETRY_CONFIG,
 };
 
 const NAMES = ["opencode-omp-snapcompact.jsonc", "opencode-omp-snapcompact.json"];
-
-function stripJsonc(text: string): string {
-	let out = "";
-	let inString = false;
-	let inLine = false;
-	let inBlock = false;
-	for (let i = 0; i < text.length; i++) {
-		const c = text[i] ?? "";
-		const n = text[i + 1] ?? "";
-		if (inLine) {
-			if (c === "\n") {
-				inLine = false;
-				out += c;
-			}
-			continue;
-		}
-		if (inBlock) {
-			if (c === "*" && n === "/") {
-				inBlock = false;
-				i++;
-			}
-			continue;
-		}
-		if (inString) {
-			out += c;
-			if (c === "\\") {
-				out += n;
-				i++;
-			} else if (c === '"') inString = false;
-			continue;
-		}
-		if (c === '"') {
-			inString = true;
-			out += c;
-			continue;
-		}
-		if (c === "/" && n === "/") {
-			inLine = true;
-			i++;
-			continue;
-		}
-		if (c === "/" && n === "*") {
-			inBlock = true;
-			i++;
-			continue;
-		}
-		out += c;
-	}
-	return out.replace(/,(\s*[}\]])/g, "$1");
-}
 
 /** Accept only known keys with expected types; drop anything else silently. */
 export function sanitize(raw: unknown): Partial<SnapcompactConfig> {
@@ -138,20 +94,13 @@ export function sanitize(raw: unknown): Partial<SnapcompactConfig> {
 	if (typeof r.toolPrefix === "string" && /^[a-z][a-z0-9_]*$/.test(r.toolPrefix)) {
 		out.toolPrefix = r.toolPrefix;
 	}
-	return out;
-}
-
-function readConfigFile(dir: string): Partial<SnapcompactConfig> {
-	for (const name of NAMES) {
-		const p = join(dir, name);
-		if (!existsSync(p)) continue;
-		try {
-			return sanitize(JSON.parse(stripJsonc(readFileSync(p, "utf8"))));
-		} catch {
-			return {};
-		}
+	if ("telemetry" in r) {
+		out.telemetry = {
+			...DEFAULT_TELEMETRY_CONFIG,
+			...sanitizeTelemetryConfig(r.telemetry),
+		};
 	}
-	return {};
+	return out;
 }
 
 /**
@@ -161,20 +110,9 @@ function readConfigFile(dir: string): Partial<SnapcompactConfig> {
  *     < ~/.config/opencode/opencode-omp-snapcompact.jsonc   (global file)
  *     < <project>/opencode-omp-snapcompact.jsonc            (project file)
  *     < inline options in opencode.jsonc                    (highest)
- *
- * Inline options win so a setting can be flipped in opencode.jsonc without
- * touching any file in the plugin.
  */
-export function resolveConfig(
-	projectDir?: string,
-	inline?: unknown,
-): SnapcompactConfig {
-	return {
-		...DEFAULT_CONFIG,
-		...readConfigFile(join(homedir(), ".config", "opencode")),
-		...(projectDir ? readConfigFile(projectDir) : {}),
-		...sanitize(inline),
-	};
+export function resolveConfig(projectDir?: string, inline?: unknown): SnapcompactConfig {
+	return layeredConfig(NAMES, sanitize, DEFAULT_CONFIG, projectDir, inline);
 }
 
 /** Back-compat alias. */

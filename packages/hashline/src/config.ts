@@ -1,6 +1,9 @@
-import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import {
+	DEFAULT_TELEMETRY_CONFIG,
+	layeredConfig,
+	sanitizeTelemetryConfig,
+	type TelemetryConfig,
+} from "@mrmm/opencode-omp-telemetry";
 
 export type PromptStyle = "full" | "brief" | "none";
 export type TagPosition = "after-type" | "before-content" | "top";
@@ -28,6 +31,8 @@ export interface HashlineConfig {
 	tagPosition: TagPosition;
 	/** Log decisions to stderr. */
 	debug: boolean;
+	/** Usage telemetry. Local JSONL by default; see the telemetry package. */
+	telemetry: TelemetryConfig;
 }
 
 export const DEFAULT_EXCLUDE = [
@@ -68,60 +73,10 @@ export const DEFAULT_CONFIG: HashlineConfig = {
 	promptStyle: "full",
 	tagPosition: "after-type",
 	debug: false,
+	telemetry: DEFAULT_TELEMETRY_CONFIG,
 };
 
 const NAMES = ["opencode-omp-hashline.jsonc", "opencode-omp-hashline.json"];
-
-/** Strip // and block comments plus trailing commas so JSONC parses as JSON. */
-export function stripJsonc(text: string): string {
-	let out = "";
-	let inString = false;
-	let inLine = false;
-	let inBlock = false;
-	for (let i = 0; i < text.length; i++) {
-		const c = text[i] ?? "";
-		const n = text[i + 1] ?? "";
-		if (inLine) {
-			if (c === "\n") {
-				inLine = false;
-				out += c;
-			}
-			continue;
-		}
-		if (inBlock) {
-			if (c === "*" && n === "/") {
-				inBlock = false;
-				i++;
-			}
-			continue;
-		}
-		if (inString) {
-			out += c;
-			if (c === "\\") {
-				out += n;
-				i++;
-			} else if (c === '"') inString = false;
-			continue;
-		}
-		if (c === '"') {
-			inString = true;
-			out += c;
-			continue;
-		}
-		if (c === "/" && n === "/") {
-			inLine = true;
-			i++;
-			continue;
-		}
-		if (c === "/" && n === "*") {
-			inBlock = true;
-			i++;
-			continue;
-		}
-		out += c;
-	}
-	return out.replace(/,(\s*[}\]])/g, "$1");
-}
 
 /**
  * Accept only known keys with expected types; silently drop anything else.
@@ -164,20 +119,13 @@ export function sanitize(raw: unknown): Partial<HashlineConfig> {
 	if (r.injectSystemPrompt === false && out.promptStyle === undefined) {
 		out.promptStyle = "none";
 	}
-	return out;
-}
-
-function readConfigFile(dir: string): Partial<HashlineConfig> {
-	for (const name of NAMES) {
-		const p = join(dir, name);
-		if (!existsSync(p)) continue;
-		try {
-			return sanitize(JSON.parse(stripJsonc(readFileSync(p, "utf8"))));
-		} catch {
-			return {};
-		}
+	if ("telemetry" in r) {
+		out.telemetry = {
+			...DEFAULT_TELEMETRY_CONFIG,
+			...sanitizeTelemetryConfig(r.telemetry),
+		};
 	}
-	return {};
+	return out;
 }
 
 /**
@@ -187,20 +135,9 @@ function readConfigFile(dir: string): Partial<HashlineConfig> {
  *     < ~/.config/opencode/opencode-omp-hashline.jsonc   (global file)
  *     < <project>/opencode-omp-hashline.jsonc            (project file)
  *     < inline options in opencode.jsonc                 (highest)
- *
- * Inline options win so a setting can be flipped in opencode.jsonc without
- * touching any file in the plugin.
  */
-export function resolveConfig(
-	projectDir?: string,
-	inline?: unknown,
-): HashlineConfig {
-	return {
-		...DEFAULT_CONFIG,
-		...readConfigFile(join(homedir(), ".config", "opencode")),
-		...(projectDir ? readConfigFile(projectDir) : {}),
-		...sanitize(inline),
-	};
+export function resolveConfig(projectDir?: string, inline?: unknown): HashlineConfig {
+	return layeredConfig(NAMES, sanitize, DEFAULT_CONFIG, projectDir, inline);
 }
 
 /** Back-compat alias. */

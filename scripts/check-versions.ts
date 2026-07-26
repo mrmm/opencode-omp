@@ -130,6 +130,9 @@ for (const pkg of packages) {
 	}
 	knownVersions.set(pkg.name, pkg.version);
 
+	const tagBaseEarly = tagNameFor(pkg.name);
+	const everReleased = allTags.some((t) => t.startsWith(`${tagBaseEarly}@`));
+
 	// 2/3/4 — changelog
 	const clPath = join(pkg.dir, "CHANGELOG.md");
 	if (!existsSync(clPath)) {
@@ -141,7 +144,12 @@ for (const pkg of packages) {
 			fail(`${label}: CHANGELOG.md has no [Unreleased] section`);
 		}
 
-		if (!versions.includes(pkg.version)) {
+		if (!everReleased) {
+			// A package that has never shipped has nothing to document yet; its
+			// first version is assigned by the release automation, and the entry
+			// is written at that moment.
+			pass(`${label}: unreleased — changelog entry deferred to first release`);
+		} else if (!versions.includes(pkg.version)) {
 			fail(
 				`${label}: CHANGELOG.md has no entry for current version ${pkg.version} ` +
 					`(found: ${versions.slice(0, 3).join(", ") || "none"})`,

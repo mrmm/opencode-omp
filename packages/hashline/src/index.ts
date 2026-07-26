@@ -23,11 +23,30 @@ import { isAbsolute, relative, resolve } from "node:path";
 
 import type { Plugin } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin";
+import { createTelemetry } from "@mrmm/opencode-omp-telemetry";
 
 import { resolveConfig, type HashlineConfig } from "./config.ts";
 import { applyPatch, PatchParseError, StaleAnchorError, computeFileHash } from "./patch.ts";
 import { HASHLINE_SYSTEM_PROMPT, HASHLINE_SYSTEM_PROMPT_BRIEF } from "./prompt.ts";
 import { formatTagLine, injectTag, isFileRead, parseReadOutput } from "./read-format.ts";
+
+/** Kept in step with package.json by the release tooling. */
+const PKG_VERSION = "0.2.0";
+
+/** File extension without the dot; "none" when absent. */
+function extOf(p: string): string {
+	const i = p.lastIndexOf(".");
+	const j = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"));
+	return i > j + 1 ? p.slice(i + 1) : "none";
+}
+
+/**
+ * What a hash on every line would have added, for direct comparison with the
+ * single tag this package emits.
+ */
+function perLineOverhead(lines: number, hashLen = 3): number {
+	return lines * ("#HL ".length + String(lines).length + 1 + hashLen + 1);
+}
 
 function matchesGlob(path: string, pattern: string): boolean {
 	const rx = pattern
@@ -63,6 +82,13 @@ export function createHashlinePlugin(staticConfig?: Partial<HashlineConfig>): Pl
 			if (cfg.debug) console.error("[omp-hashline]", ...a);
 		};
 
+		const tel = createTelemetry({
+			service: "opencode-omp-hashline",
+			serviceVersion: PKG_VERSION,
+			config: cfg.telemetry,
+		});
+		if (tel.enabled) log("telemetry", tel.sinkKinds.join("+"), tel.filePath ?? "");
+
 		log("config", JSON.stringify({ ...cfg, exclude: `${cfg.exclude.length} patterns` }));
 
 		const skip = (relPath: string, absPath: string): string | null => {
@@ -96,35 +122,64 @@ export function createHashlinePlugin(staticConfig?: Partial<HashlineConfig>): Pl
 				const relPath = toRelative(root, absPath);
 
 				const reason = skip(relPath, absPath);
-				if (reason) return log("skip", relPath, reason);
+				if (reason) {
+					tel.count("hashline.read.skipped", 1, {
+						reason: reason.startsWith("excluded") ? "excluded" : reason,
+						ext: extOf(relPath),
+					});
+					return log("skip", relPath, reason);
+				}
 
 				// Only touch output we recognise; an unknown render shape passes
 				// through untouched rather than being corrupted.
 				const parsed = parseReadOutput(output.output);
 				if (parsed.contentOpenIndex === -1 || parsed.lines.length === 0) {
+					// Worth watching: a spike here means the host's Read format moved,
+					// which is precisely the failure this package exists to avoid.
+					tel.count("hashline.read.skipped", 1, {
+						reason: "unrecognised_shape",
+						ext: extOf(relPath),
+					});
 					return log("skip", relPath, "unrecognised read shape");
 				}
 
 				let content: string;
+				const stopRead = tel.timer("hashline.read.duration_ms");
 				try {
 					content = await readFile(absPath, "utf8");
 				} catch {
+					tel.count("hashline.read.skipped", 1, {
+						reason: "unreadable",
+						ext: extOf(relPath),
+					});
 					return log("skip", absPath, "unreadable");
 				}
 
 				if (Buffer.byteLength(content, "utf8") > cfg.maxFileSize) {
+					tel.count("hashline.read.skipped", 1, { reason: "over_max_bytes", ext: extOf(relPath) });
 					return log("skip", relPath, "over maxFileSize");
 				}
 				if (cfg.maxLines > 0 && content.split("\n").length > cfg.maxLines) {
+					tel.count("hashline.read.skipped", 1, { reason: "over_max_lines", ext: extOf(relPath) });
 					return log("skip", relPath, "over maxLines");
 				}
 
 				const tag = computeFileHash(content);
+				const before = output.output.length;
 				output.output = injectTag(
 					output.output,
 					formatTagLine(relPath, tag),
 					cfg.tagPosition,
 				);
+				const lines = parsed.lines.length;
+				const ext = extOf(relPath);
+				tel.count("hashline.read.tagged", 1, { ext });
+				// The comparison that justifies one tag over a hash per line.
+				tel.histogram("hashline.read.overhead_chars", output.output.length - before, { ext });
+				tel.histogram("hashline.read.overhead_ratio",
+					before > 0 ? (output.output.length - before) / before : 0, { ext });
+				tel.histogram("hashline.read.per_line_would_cost", perLineOverhead(lines), { ext });
+				stopRead({ ext, result: "tagged" });
 				log("tagged", relPath, tag);
 			};
 		}
@@ -161,8 +216,12 @@ export function createHashlinePlugin(staticConfig?: Partial<HashlineConfig>): Pl
 					},
 					async execute(args, ctx) {
 						const projectRoot = ctx.worktree || ctx.directory || root;
+						const stop = tel.timer("hashline.patch.duration_ms");
 						try {
 							const applied = await applyPatch(args.patch, projectRoot);
+							tel.count("hashline.patch.applied", 1, { sections: applied.length });
+							tel.histogram("hashline.patch.sections", applied.length);
+							stop({ result: "applied" });
 							const lines = applied.map(
 								(a) =>
 									`  ${a.path}: lines ${a.startLine}-${a.endLine} → fresh tag #${a.newTag}`,
@@ -183,6 +242,10 @@ export function createHashlinePlugin(staticConfig?: Partial<HashlineConfig>): Pl
 							};
 						} catch (err) {
 							if (err instanceof StaleAnchorError) {
+								// The safety net firing. This rate is the single best
+								// evidence that content-anchoring earns its keep.
+								tel.count("hashline.patch.stale_anchor", 1, { ext: extOf(err.path) });
+								stop({ result: "stale" });
 								return {
 									title: `${cfg.toolName}: stale anchor`,
 									output:
@@ -191,8 +254,12 @@ export function createHashlinePlugin(staticConfig?: Partial<HashlineConfig>): Pl
 								};
 							}
 							if (err instanceof PatchParseError) {
+								tel.count("hashline.patch.error", 1, { reason: "parse" });
+								stop({ result: "parse_error" });
 								return { title: `${cfg.toolName}: parse error`, output: err.message };
 							}
+							tel.count("hashline.patch.error", 1, { reason: "other" });
+							stop({ result: "error" });
 							return {
 								title: `${cfg.toolName}: failed`,
 								output: err instanceof Error ? err.message : String(err),
