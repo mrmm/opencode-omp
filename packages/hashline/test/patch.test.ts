@@ -188,10 +188,14 @@ describe("error handling", () => {
 		await expect(applyPatch("", root)).rejects.toThrow(PatchParseError);
 	});
 
-	test("nonexistent file is reported clearly", async () => {
-		await expect(
-			applyPatch(`[nope.txt#ABCD]\nSWAP 1.=1:\n+X`, root),
-		).rejects.toThrow(/Cannot read/);
+	test("nonexistent file is reported clearly, naming the absolute path tried", async () => {
+		// The message must identify WHERE it looked. An earlier version said only
+		// "Cannot read nope.txt — does it exist?", which gave no way to see that
+		// the path had been resolved against an unexpected root.
+		const err = await applyPatch(`[nope.txt#ABCD]\nSWAP 1.=1:\n+X`, root).catch((e) => e);
+		expect(err).toBeInstanceOf(Error);
+		expect((err as Error).message).toContain("Cannot locate nope.txt");
+		expect((err as Error).message).toContain(root);
 	});
 
 	test("path traversal outside the project is refused", async () => {

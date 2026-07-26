@@ -17,7 +17,11 @@ export {
 	computeFileHash,
 	planPatch,
 	PatchParseError,
+	PathResolutionError,
 	StaleAnchorError,
+	rememberPath,
+	forgetPaths,
+	knownPathCount,
 } from "./patch.ts";
 export type { AppliedSection, SectionPlan } from "./patch.ts";
 

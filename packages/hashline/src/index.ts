@@ -32,8 +32,10 @@ import {
 	applyPatch,
 	planPatch,
 	PatchParseError,
+	PathResolutionError,
 	StaleAnchorError,
 	computeFileHash,
+	rememberPath,
 } from "./patch.ts";
 import { HASHLINE_SYSTEM_PROMPT, HASHLINE_SYSTEM_PROMPT_BRIEF } from "./prompt.ts";
 import { formatTagLine, injectTag, isFileRead, parseReadOutput } from "./read-format.ts";
@@ -220,6 +222,9 @@ export function createHashlinePlugin(staticConfig?: Partial<HashlineConfig>): Pl
 				}
 
 				const tag = computeFileHash(content);
+				// Record where this path actually pointed. Without it, a tag whose
+				// path is relative to another repository cannot be resolved later.
+				rememberPath(relPath, absPath);
 				const before = output.output.length;
 				output.output = injectTag(
 					output.output,
@@ -339,6 +344,14 @@ export function createHashlinePlugin(staticConfig?: Partial<HashlineConfig>): Pl
 									output:
 										`${err.message}\n\nNo files were modified. Re-read ${err.path} ` +
 										`and rebuild the patch against the fresh tag.`,
+								};
+							}
+							if (err instanceof PathResolutionError) {
+								tel.count("hashline.patch.error", 1, { reason: "unresolved_path" });
+								stop({ result: "unresolved_path" });
+								return {
+									title: `${cfg.toolName}: path not found`,
+									output: `${err.message}\n\nNo files were modified.`,
 								};
 							}
 							if (err instanceof PatchParseError) {

@@ -9,6 +9,7 @@
  * Trade: no 3-way-merge recovery. A stale anchor is rejected rather than merged —
  * a safe failure, and 350x smaller.
  */
+import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 
@@ -53,14 +54,89 @@ export class PatchParseError extends Error {
 	}
 }
 
-/** Keep writes inside the project. */
-function resolveInside(root: string, p: string): string {
-	const abs = isAbsolute(p) ? p : resolve(root, p);
+/**
+ * Absolute path a tag referred to when the file was read.
+ *
+ * A tag carries a path relative to whichever root was current at READ time. If
+ * the root differs at EDIT time — a different worktree, or a session spanning
+ * two repositories — resolving that same relative path lands somewhere else, or
+ * nowhere at all. The read hook therefore records what each path actually
+ * pointed at, and resolution consults that before guessing.
+ *
+ * Bounded so a long session cannot grow it without limit.
+ */
+const KNOWN_PATHS = new Map<string, string>();
+const KNOWN_LIMIT = 500;
+
+/** Called by the read hook for every file it tags. */
+export function rememberPath(relPath: string, absPath: string): void {
+	if (KNOWN_PATHS.size >= KNOWN_LIMIT && !KNOWN_PATHS.has(relPath)) {
+		// Map preserves insertion order, so the first key is the oldest.
+		const oldest = KNOWN_PATHS.keys().next().value;
+		if (oldest !== undefined) KNOWN_PATHS.delete(oldest);
+	}
+	KNOWN_PATHS.set(relPath, absPath);
+}
+
+/** Exposed for tests and diagnostics. */
+export function knownPathCount(): number {
+	return KNOWN_PATHS.size;
+}
+
+export function forgetPaths(): void {
+	KNOWN_PATHS.clear();
+}
+
+export class PathResolutionError extends Error {
+	constructor(
+		readonly path: string,
+		readonly tried: string[],
+	) {
+		super(
+			`Cannot locate ${path}.\n\nTried:\n${tried.map((t) => `  ${t}`).join("\n")}\n\n` +
+				`A tag's path is relative to the directory the file was read from. If this ` +
+				`session spans more than one repository, re-read the file so its tag is ` +
+				`anchored where the edit will run.`,
+		);
+		this.name = "PathResolutionError";
+	}
+}
+
+/**
+ * Resolve a section path to an absolute path that exists.
+ *
+ * Order matters. A path recorded by the read hook is trusted even when it sits
+ * outside the project root — the file was demonstrably read, so editing it is
+ * legitimate. Anything else must resolve inside the root, which is what stops an
+ * invented `../../etc/passwd` from being written.
+ */
+function resolveSectionPath(root: string, p: string): string {
+	const tried: string[] = [];
+
+	// 1. Exactly what the read hook saw.
+	const known = KNOWN_PATHS.get(p);
+	if (known) {
+		if (existsSync(known)) return known;
+		tried.push(`${known}  (recorded at read time, now missing)`);
+	}
+
+	// 2. An absolute path carried in the tag.
+	if (isAbsolute(p)) {
+		if (existsSync(p)) return p;
+		tried.push(p);
+		throw new PathResolutionError(p, tried);
+	}
+
+	// 3. Relative to the current root — sandboxed.
+	const abs = resolve(root, p);
 	const rel = relative(root, abs);
 	if (rel.startsWith("..") || isAbsolute(rel)) {
 		throw new Error(`Refusing to edit outside the project directory: ${p}`);
 	}
-	return abs;
+	if (existsSync(abs)) return abs;
+	tried.push(`${abs}  (relative to the current root)`);
+
+	throw new PathResolutionError(p, tried);
 }
 
 /**
@@ -91,13 +167,18 @@ export async function planPatch(
 	const plans: SectionPlan[] = [];
 	for (const section of parsed.sections) {
 		const relPath = section.path;
-		const absPath = resolveInside(projectRoot, relPath);
+		const absPath = resolveSectionPath(projectRoot, relPath);
 
 		let original: string;
 		try {
 			original = await readFile(absPath, "utf8");
-		} catch {
-			throw new Error(`Cannot read ${relPath} — does it exist?`);
+		} catch (err) {
+			// Report the path actually attempted and the underlying reason. The
+			// previous message named only the relative path and guessed at
+			// "does it exist?", which hid permission and encoding failures too.
+			throw new Error(
+				`Cannot read ${absPath}: ${err instanceof Error ? err.message : String(err)}`,
+			);
 		}
 
 		const actualTag = computeFileHash(original);
