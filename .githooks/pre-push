@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+#
+# Blocks a push when version/tagging hygiene fails.
+#
+# Enable once per clone:
+#   git config core.hooksPath .githooks
+#
+# Bypass (use sparingly):
+#   git push --no-verify
+
+set -euo pipefail
+
+RED='\033[31m'; GRN='\033[32m'; YEL='\033[33m'; DIM='\033[2m'; RST='\033[0m'
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+if ! command -v bun >/dev/null 2>&1; then
+  echo -e "${YEL}!${RST} bun not found — skipping hygiene gate"
+  exit 0
+fi
+
+# Detect whether this push includes any tags.
+PUSHING_TAGS=0
+TAGS_PUSHED=()
+while read -r local_ref _local_sha remote_ref _remote_sha; do
+  [ -z "${local_ref:-}" ] && continue
+  case "$local_ref" in
+    refs/tags/*)
+      PUSHING_TAGS=1
+      TAGS_PUSHED+=("${local_ref#refs/tags/}")
+      ;;
+  esac
+done
+
+echo -e "${DIM}pre-push: version + tagging hygiene${RST}"
+
+# Tag format: this repo versions packages independently.
+if [ "$PUSHING_TAGS" -eq 1 ]; then
+  for tag in "${TAGS_PUSHED[@]}"; do
+    if [[ "$tag" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+      echo -e "${RED}✗${RST} Bare version tag '${tag}'."
+      echo -e "  Packages version independently — use ${DIM}<package>@<version>${RST}."
+      exit 1
+    fi
+    if [[ ! "$tag" =~ ^opencode-omp-[a-z]+@[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+      echo -e "${RED}✗${RST} Tag '${tag}' does not match <package>@<semver>."
+      exit 1
+    fi
+    echo -e "${GRN}✓${RST} tag format ok: ${tag}"
+  done
+fi
+
+# Strict tag checks only when tags are actually being pushed.
+if [ "$PUSHING_TAGS" -eq 1 ]; then
+  bun scripts/check-versions.ts --tags
+else
+  bun scripts/check-versions.ts
+fi
+
+echo -e "${GRN}✓${RST} hygiene gate passed"

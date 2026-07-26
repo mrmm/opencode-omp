@@ -1,0 +1,57 @@
+# Changelog — opencode-omp-hashline
+
+All notable changes to this package are documented here.
+
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+Tags are `opencode-omp-hashline@<version>`.
+
+## [Unreleased]
+
+## [0.1.0] - 2026-07-26
+
+Initial release.
+
+### Added
+
+- Read hook that injects one `[path#TAG]` line per file, where `TAG` is a 4-hex
+  hash computed from the **raw file bytes** — never from the rendered tool output.
+- `hashline_patch` tool supporting `SWAP A.=B:`, `DEL A.=B`, `INS.PRE A:`,
+  `INS.POST A:`, `INS.HEAD:`, `INS.TAIL:` with `+TEXT` body rows.
+- Multi-section preflight: every section is hash-verified before any file is
+  written, so a single stale tag aborts the whole batch.
+- Best-effort rollback when a write fails mid-batch.
+- Path sandboxing — sections resolving outside the project directory are refused.
+- System-prompt injection describing the patch language.
+- JSONC configuration via `opencode-omp-hashline.jsonc` (project overrides global).
+- Fail-safe annotation: an unrecognised Read shape passes through untouched rather
+  than being corrupted.
+
+### Fixed
+
+Addresses the defects measured in npm `opencode-hashline@1.4.0` (unrelated package,
+unmaintained since 2026-05-05):
+
+- **Refs addressed display positions, not file lines.** That package annotated
+  `output.output` — the already-rendered Read XML — so every reference was offset by
+  the wrapper. Measured 0 / 155,460 refs with a correct line number.
+- **Edits with as-displayed refs failed 100% of the time** (0 / 390). Oracle-computed
+  refs succeeded 390 / 390, confirming the applier was fine and the annotator was not.
+- **Reads grew 37%** from per-line hash prefixes. One file tag costs under 64
+  characters regardless of file length.
+- **Trailing footer corruption.** The real Read format ends with a blank line plus
+  `(End of file - total N lines)` (or the paginated variant) before `</content>`. A
+  splice assuming `</content>` follows the last content row damages final-line edits.
+
+### Notes
+
+- Uses the native-free upstream path (`input` + `format` + `apply`). The full
+  `Patcher` transitively requires `@oh-my-pi/pi-natives` — 139 MB for a single
+  `diffLineRuns` call — so stale anchors are rejected rather than 3-way merged.
+  Install size stays ~400 KB.
+- Block ops (`SWAP.BLK`, `DEL.BLK`, `INS.BLK.POST`) and file ops (`REM`, `MV`) are
+  out of scope for v1; they require tree-sitter from the native addon.
+
+[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-hashline@0.1.0...HEAD
+[0.1.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.1.0

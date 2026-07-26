@@ -14,7 +14,11 @@
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "check": "bun run typecheck && bun test"
+    "check": "bun run typecheck && bun test && bun run check:versions",
+    "check:versions": "bun scripts/check-versions.ts",
+    "check:versions:tags": "bun scripts/check-versions.ts --tags",
+    "release": "bun scripts/release.ts",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "devDependencies": {
     "@types/bun": "latest",
