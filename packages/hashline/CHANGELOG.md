@@ -9,6 +9,8 @@ Tags are `opencode-omp-hashline@<version>`.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-07-26
+
 ## [0.4.0] - 2026-07-26
 
 ### Changed
@@ -149,9 +151,10 @@ unmaintained since 2026-05-05):
 - Block ops (`SWAP.BLK`, `DEL.BLK`, `INS.BLK.POST`) and file ops (`REM`, `MV`) are
   out of scope for v1; they require tree-sitter from the native addon.
 
-[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-hashline@0.4.0...HEAD
+[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-hashline@0.4.1...HEAD
 [0.1.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.1.0
 [0.1.1]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.1.1
 [0.2.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.2.0
 [0.3.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.3.0
 [0.4.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.4.0
+[0.4.1]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.4.1

@@ -9,6 +9,22 @@ Tags are `telemetry@<version>`.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-26
+
+### Added
+
+- `omp-telemetry` CLI, so metrics can be inspected without opening a JSONL file
+  or being inside a repository. Subcommands: `summary`, `verdict`, `sessions`,
+  `raw`, `names`, `watch`, `path`, `clear`. All support `--json`.
+- `analyse.ts` — the aggregation and verdict logic as pure functions, separated
+  from rendering so the numbers are testable without parsing terminal output.
+- `js-tiktoken` as an optional peer: token figures are measured when it is
+  installed and estimated otherwise, with the output stating which.
+
+### Added
+
+- **telemetry**: omp-telemetry CLI for inspecting metrics (4516d63d)
+
 ### Added
 
 - `omp-telemetry` CLI, so metrics can be inspected without opening a JSONL file
@@ -103,6 +119,7 @@ Tags are `telemetry@<version>`.
 - Telemetry never breaks its caller: unwritable sinks, circular payloads, and a
   missing OTel SDK all degrade to no-ops, each covered by a test.
 
-[Unreleased]: https://github.com/mrmm/opencode-omp/compare/telemetry@0.2.0...HEAD
+[Unreleased]: https://github.com/mrmm/opencode-omp/compare/telemetry@0.3.0...HEAD
 [0.1.0]: https://github.com/mrmm/opencode-omp/releases/tag/telemetry@0.1.0
 [0.2.0]: https://github.com/mrmm/opencode-omp/releases/tag/telemetry@0.2.0
+[0.3.0]: https://github.com/mrmm/opencode-omp/releases/tag/telemetry@0.3.0
