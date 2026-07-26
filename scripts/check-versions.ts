@@ -81,6 +81,10 @@ function loadPackages(): Pkg[] {
 		if (!existsSync(pj)) continue;
 		try {
 			const parsed = JSON.parse(readFileSync(pj, "utf8"));
+			// A package that is never published has no release hygiene to enforce:
+			// no tag, no changelog, no version to reconcile. derive-version already
+			// skips these; this keeps the two in agreement.
+			if (parsed.private === true) continue;
 			out.push({ dir: join(PKG_DIR, entry.name), ...parsed });
 		} catch {
 			fail(`packages/${entry.name}/package.json is not valid JSON`);
