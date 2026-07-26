@@ -67,6 +67,19 @@ fi
 
 # A broken build must not be pushable. This gap let a typecheck failure reach
 # main: the hook validated versions but never compiled anything.
+# CI installs with --frozen-lockfile, so a lockfile that does not match
+# package.json fails every job before a single test runs. Adding a workspace
+# package drifted it once and reached main, because this gate ran tests and
+# typecheck but never the install CI actually performs.
+echo -e "${DIM}pre-push: lockfile${RST}"
+if ! bun install --frozen-lockfile >/tmp/omp-lock.log 2>&1; then
+  echo -e "${RED}✗${RST} bun.lock does not match package.json — CI would fail:"
+  grep -E "error|note" /tmp/omp-lock.log | head -4 | sed 's/^/    /'
+  echo -e "    run ${DIM}bun install${RST} and commit bun.lock"
+  exit 1
+fi
+echo -e "${GRN}✓${RST} lockfile matches"
+
 echo -e "${DIM}pre-push: typecheck${RST}"
 if ! bun run typecheck >/tmp/omp-typecheck.log 2>&1; then
   echo -e "${RED}✗${RST} typecheck failed:"
