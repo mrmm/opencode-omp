@@ -1,5 +1,5 @@
 /**
- * Shared telemetry contract for opencode-omp plugins.
+ * Telemetry contract.
  *
  * Naming follows OpenTelemetry conventions (`<service>.<subject>.<verb>`, dotted,
  * lowercase, snake_case leaves) so the same data is meaningful whether it lands

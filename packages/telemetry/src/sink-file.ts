@@ -17,11 +17,22 @@ import { dirname, join } from "node:path";
 
 import type { Sink, TelemetryRecord } from "./types.ts";
 
-/** XDG state dir, falling back to the conventional location. */
-export function defaultSinkPath(service: string): string {
+/** Filesystem-safe leaf derived from a package name. */
+export function slug(name: string): string {
+	return name.replace(/^@[^/]+\//, "").replace(/[^a-z0-9-]/gi, "-");
+}
+
+/**
+ * Default sink location: `$XDG_STATE_HOME/<namespace>/<service>.jsonl`,
+ * falling back to `~/.local/state`.
+ *
+ * `namespace` groups related services under one directory. It defaults to the
+ * service itself, so a lone consumer needs no configuration.
+ */
+export function defaultSinkPath(service: string, namespace?: string): string {
 	const base = process.env.XDG_STATE_HOME ?? join(homedir(), ".local", "state");
-	const leaf = service.replace(/^@[^/]+\//, "").replace(/[^a-z0-9-]/gi, "-");
-	return join(base, "opencode-omp", `${leaf}.jsonl`);
+	const leaf = slug(service);
+	return join(base, namespace ? slug(namespace) : leaf, `${leaf}.jsonl`);
 }
 
 export class FileSink implements Sink {

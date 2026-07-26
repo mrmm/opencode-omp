@@ -9,7 +9,7 @@ rather than reimplementing them.
 |---|---|---|
 | [`@mrmm/opencode-omp-hashline`](packages/hashline) | File-hash-anchored patch editing | **~400 KB** (native-free) |
 | [`@mrmm/opencode-omp-snapcompact`](packages/snapcompact) | Density-gated bitmap context compression | ~180 MB (needs the native rasterizer) |
-| [`@mrmm/opencode-omp-telemetry`](packages/telemetry) | Shared local-first telemetry | 0 deps |
+| [`@mrmm/telemetry`](packages/telemetry) | Local-first telemetry — standalone, reusable | 0 deps |
 
 Separate packages so hashline users never pull snapcompact's 139 MB native addon.
 

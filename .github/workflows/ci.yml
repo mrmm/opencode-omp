@@ -73,8 +73,18 @@ jobs:
             echo "::error::Bare version tag '$TAG'. Packages version independently — use <package>@<version>."
             exit 1
           fi
-          if [[ ! "$TAG" =~ ^opencode-omp-[a-z]+@[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-            echo "::error::Tag '$TAG' does not match <package>@<semver>."
+          BASE="${TAG%@*}"
+          KNOWN=0
+          for d in packages/*/package.json; do
+            NAME=$(node -e "process.stdout.write(require('./$d').name||'')")
+            [ "$BASE" = "${NAME##*/}" ] && KNOWN=1
+          done
+          if [ "$KNOWN" -ne 1 ]; then
+            echo "::error::Tag '$TAG' has no matching package in packages/."
+            exit 1
+          fi
+          if [[ ! "$TAG" =~ @[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag '$TAG' does not end in a semver version."
             exit 1
           fi
           echo "tag format ok"

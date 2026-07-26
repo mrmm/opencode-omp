@@ -1,5 +1,8 @@
 /**
- * Shared telemetry for opencode-omp plugins.
+ * Local-first telemetry with an optional OpenTelemetry bridge.
+ *
+ * Standalone and host-agnostic: nothing here knows about any particular
+ * application. Point it at a namespace and a service name and it works.
  *
  * Design in one line: instrument with OpenTelemetry semantics, let the sink
  * decide where data goes.
@@ -32,6 +35,11 @@ export interface TelemetryOptions {
 	/** Package name, used as the OTel service and the JSONL filename. */
 	service: string;
 	serviceVersion: string;
+	/**
+	 * Directory namespace grouping related services under the state dir.
+	 * Defaults to the service name, so a single consumer needs no config.
+	 */
+	namespace?: string;
 	config?: Partial<TelemetryConfig>;
 	/** Groups records from one host session. */
 	session?: string;
@@ -68,7 +76,7 @@ export class Telemetry {
 		for (const kind of this.cfg.sinks) {
 			if (kind === "file") {
 				this.fileSink = new FileSink(
-					this.cfg.file ?? defaultSinkPath(opts.service),
+					this.cfg.file ?? defaultSinkPath(opts.service, opts.namespace),
 					this.cfg.maxBytes,
 					(e) => this.debug("file sink", e),
 				);
@@ -184,7 +192,7 @@ export class Telemetry {
 	}
 
 	private debug(where: string, e: unknown): void {
-		if (this.cfg.debug) console.error(`[omp-telemetry] ${where}:`, e);
+		if (this.cfg.debug) console.error(`[telemetry:${this.opts.service}] ${where}:`, e);
 	}
 }
 
@@ -225,9 +233,9 @@ export function sanitizeTelemetryConfig(raw: unknown): Partial<TelemetryConfig> 
 	return out;
 }
 
-export { FileSink, defaultSinkPath } from "./sink-file.ts";
+export { FileSink, defaultSinkPath, slug } from "./sink-file.ts";
 export { OtelSink } from "./sink-otel.ts";
-export { layeredConfig, readJsonc, stripJsonc } from "./jsonc.ts";
+export { layeredConfig, readJsonc, stripJsonc, type LayeredOptions } from "./jsonc.ts";
 export {
 	DEFAULT_TELEMETRY_CONFIG,
 	TELEMETRY_SCHEMA_VERSION,

@@ -49,7 +49,7 @@
   "dependencies": {
     "@oh-my-pi/snapcompact": "^17.1.3",
     "js-tiktoken": "^1.0.21",
-    "@mrmm/opencode-omp-telemetry": "workspace:*"
+    "@mrmm/telemetry": "workspace:*"
   },
   "peerDependencies": {
     "@opencode-ai/plugin": ">=1.17.0"

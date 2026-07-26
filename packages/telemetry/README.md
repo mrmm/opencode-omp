@@ -1,8 +1,11 @@
-# @mrmm/opencode-omp-telemetry
+# @mrmm/telemetry
 
-Shared telemetry for opencode-omp plugins.
+Local-first telemetry with an optional OpenTelemetry bridge.
 
 **Local JSONL by default. No network code. OpenTelemetry when you want it.**
+
+Standalone and host-agnostic — it knows nothing about any particular
+application. Give it a service name and it works.
 
 ## Design
 
@@ -37,21 +40,22 @@ Transport lives entirely in the host's SDK.
 ## Usage
 
 ```ts
-import { createTelemetry } from "@mrmm/opencode-omp-telemetry";
+import { createTelemetry } from "@mrmm/telemetry";
 
 const tel = createTelemetry({
-  service: "opencode-omp-hashline",
-  serviceVersion: "0.2.0",
+  service: "my-tool",
+  serviceVersion: "1.0.0",
+  namespace: "my-suite",        // optional: group related services
   config: { sinks: ["file"] },
 });
 
-tel.count("hashline.read.tagged", 1, { ext: "ts" });
-tel.histogram("hashline.read.overhead_chars", 17, { ext: "ts" });
+tel.count("my_tool.request.handled", 1, { route: "/api" });
+tel.histogram("my_tool.payload_bytes", 4096, { route: "/api" });
 
-const stop = tel.timer("hashline.patch.duration_ms");
-stop({ result: "applied" });
+const stop = tel.timer("my_tool.request.duration_ms");
+stop({ result: "ok" });
 
-tel.event("hashline.patch.stale", { path: "src/a.ts" });
+tel.event("my_tool.cache.evicted", { key: "abc", reason: "ttl" });
 ```
 
 ### Instruments
@@ -94,10 +98,18 @@ extension. Paths appear only where a plugin passes one; set `redactPaths: true`
 to replace them with a stable 8-character hash — enough to correlate repeat
 access without recording structure.
 
-Everything stays on disk under `$XDG_STATE_HOME/opencode-omp/`. Delete the
+Everything stays on disk under `$XDG_STATE_HOME/<namespace>/`. Delete the
 directory to erase it; set `"enabled": false` to stop collecting.
 
 ## Reading the data
+
+Records are plain JSONL — one object per line — so `jq` is often enough:
+
+```sh
+jq -r 'select(.instrument=="counter") | .name' ~/.local/state/<namespace>/*.jsonl | sort | uniq -c
+```
+
+This repository also ships a summariser:
 
 ```sh
 bun scripts/telemetry-report.ts          # counters + percentiles

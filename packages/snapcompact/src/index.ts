@@ -19,7 +19,7 @@ import { isAbsolute, relative, resolve } from "node:path";
 
 import type { Plugin } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin";
-import { createTelemetry } from "@mrmm/opencode-omp-telemetry";
+import { createTelemetry } from "@mrmm/telemetry";
 
 import { resolveConfig, type SnapcompactConfig } from "./config.ts";
 import { density, shouldCompact, type Decision } from "./density.ts";
@@ -68,6 +68,7 @@ export function createSnapcompactPlugin(
 
 		const tel = createTelemetry({
 			service: "opencode-omp-snapcompact",
+			namespace: "opencode-omp",
 			serviceVersion: PKG_VERSION,
 			config: cfg.telemetry,
 		});

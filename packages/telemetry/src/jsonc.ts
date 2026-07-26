@@ -70,9 +70,16 @@ export function readJsonc(path: string): unknown {
 	}
 }
 
+export interface LayeredOptions {
+	/** Directory holding user-global config. Default: ~/.config/<globalDirName>. */
+	globalDir?: string;
+	/** Leaf under ~/.config when `globalDir` is not given. */
+	globalDirName?: string;
+}
+
 /**
  * Layered config lookup, most specific last:
- *   defaults < ~/.config/opencode/<name> < <projectDir>/<name> < inline
+ *   defaults < <globalDir>/<name> < <projectDir>/<name> < inline
  */
 export function layeredConfig<T extends object>(
 	basenames: string[],
@@ -80,6 +87,7 @@ export function layeredConfig<T extends object>(
 	defaults: T,
 	projectDir?: string,
 	inline?: unknown,
+	opts: LayeredOptions = {},
 ): T {
 	const read = (dir: string): Partial<T> => {
 		for (const name of basenames) {
@@ -88,9 +96,11 @@ export function layeredConfig<T extends object>(
 		}
 		return {};
 	};
+	const globalDir =
+		opts.globalDir ?? join(homedir(), ".config", opts.globalDirName ?? "");
 	return {
 		...defaults,
-		...read(join(homedir(), ".config", "opencode")),
+		...(opts.globalDir || opts.globalDirName ? read(globalDir) : {}),
 		...(projectDir ? read(projectDir) : {}),
 		...sanitize(inline),
 	};

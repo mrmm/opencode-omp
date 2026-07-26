@@ -3,7 +3,7 @@ import {
 	layeredConfig,
 	sanitizeTelemetryConfig,
 	type TelemetryConfig,
-} from "@mrmm/opencode-omp-telemetry";
+} from "@mrmm/telemetry";
 
 export type SnapcompactMode = "tool" | "auto-compact";
 
@@ -112,7 +112,9 @@ export function sanitize(raw: unknown): Partial<SnapcompactConfig> {
  *     < inline options in opencode.jsonc                    (highest)
  */
 export function resolveConfig(projectDir?: string, inline?: unknown): SnapcompactConfig {
-	return layeredConfig(NAMES, sanitize, DEFAULT_CONFIG, projectDir, inline);
+	return layeredConfig(NAMES, sanitize, DEFAULT_CONFIG, projectDir, inline, {
+		globalDirName: "opencode",
+	});
 }
 
 /** Back-compat alias. */

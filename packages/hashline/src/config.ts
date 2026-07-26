@@ -3,7 +3,7 @@ import {
 	layeredConfig,
 	sanitizeTelemetryConfig,
 	type TelemetryConfig,
-} from "@mrmm/opencode-omp-telemetry";
+} from "@mrmm/telemetry";
 
 export type PromptStyle = "full" | "brief" | "none";
 export type TagPosition = "after-type" | "before-content" | "top";
@@ -137,7 +137,9 @@ export function sanitize(raw: unknown): Partial<HashlineConfig> {
  *     < inline options in opencode.jsonc                 (highest)
  */
 export function resolveConfig(projectDir?: string, inline?: unknown): HashlineConfig {
-	return layeredConfig(NAMES, sanitize, DEFAULT_CONFIG, projectDir, inline);
+	return layeredConfig(NAMES, sanitize, DEFAULT_CONFIG, projectDir, inline, {
+		globalDirName: "opencode",
+	});
 }
 
 /** Back-compat alias. */

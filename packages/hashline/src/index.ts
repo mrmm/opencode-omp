@@ -23,7 +23,7 @@ import { isAbsolute, relative, resolve } from "node:path";
 
 import type { Plugin } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin";
-import { createTelemetry } from "@mrmm/opencode-omp-telemetry";
+import { createTelemetry } from "@mrmm/telemetry";
 
 import { resolveConfig, type HashlineConfig } from "./config.ts";
 import { applyPatch, PatchParseError, StaleAnchorError, computeFileHash } from "./patch.ts";
@@ -84,6 +84,7 @@ export function createHashlinePlugin(staticConfig?: Partial<HashlineConfig>): Pl
 
 		const tel = createTelemetry({
 			service: "opencode-omp-hashline",
+			namespace: "opencode-omp",
 			serviceVersion: PKG_VERSION,
 			config: cfg.telemetry,
 		});

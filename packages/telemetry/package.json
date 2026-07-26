@@ -1,15 +1,16 @@
 {
-  "name": "@mrmm/opencode-omp-telemetry",
+  "name": "@mrmm/telemetry",
   "version": "0.0.0",
   "type": "module",
-  "description": "Shared OpenTelemetry-shaped telemetry for opencode-omp plugins. Local JSONL by default, OTLP via an optional peer dependency.",
+  "description": "Local-first telemetry with an optional OpenTelemetry bridge. JSONL by default, zero dependencies, no network.",
   "keywords": [
-    "opencode",
     "telemetry",
     "opentelemetry",
     "otel",
     "metrics",
-    "jsonl"
+    "jsonl",
+    "local-first",
+    "observability"
   ],
   "homepage": "https://github.com/mrmm/opencode-omp/tree/main/packages/telemetry",
   "repository": {

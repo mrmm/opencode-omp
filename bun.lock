@@ -13,7 +13,7 @@
       "name": "@mrmm/opencode-omp-hashline",
       "version": "0.2.0",
       "dependencies": {
-        "@mrmm/opencode-omp-telemetry": "workspace:*",
+        "@mrmm/telemetry": "workspace:*",
         "@oh-my-pi/hashline": "^17.1.3",
       },
       "peerDependencies": {
@@ -24,7 +24,7 @@
       "name": "@mrmm/opencode-omp-snapcompact",
       "version": "0.2.0",
       "dependencies": {
-        "@mrmm/opencode-omp-telemetry": "workspace:*",
+        "@mrmm/telemetry": "workspace:*",
         "@oh-my-pi/snapcompact": "^17.1.3",
         "js-tiktoken": "^1.0.21",
       },
@@ -33,8 +33,8 @@
       },
     },
     "packages/telemetry": {
-      "name": "@mrmm/opencode-omp-telemetry",
-      "version": "0.1.0",
+      "name": "@mrmm/telemetry",
+      "version": "0.0.0",
       "devDependencies": {
         "@opentelemetry/api": "^1.9.1",
       },
@@ -63,7 +63,7 @@
 
     "@mrmm/opencode-omp-snapcompact": ["@mrmm/opencode-omp-snapcompact@workspace:packages/snapcompact"],
 
-    "@mrmm/opencode-omp-telemetry": ["@mrmm/opencode-omp-telemetry@workspace:packages/telemetry"],
+    "@mrmm/telemetry": ["@mrmm/telemetry@workspace:packages/telemetry"],
 
     "@msgpackr-extract/msgpackr-extract-darwin-arm64": ["@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4", "", { "os": "darwin", "cpu": "arm64" }, "sha512-LCkGo6JDfaBhgST7UpPWgNgLINpcpabaHfyz5OBx75nUYxBsaEPxjnyNjWpeb/xBup/682QnBfRBy2/LvPutZQ=="],
 

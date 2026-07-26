@@ -1,18 +1,20 @@
-# Changelog — @mrmm/opencode-omp-telemetry
+# Changelog — @mrmm/telemetry
 
 All notable changes to this package are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Tags are `opencode-omp-telemetry@<version>`.
+Tags are `telemetry@<version>`.
 
 ## [Unreleased]
 
 ### Added
 
-- Shared telemetry for all plugins in this repository, replacing two divergent
-  per-plugin implementations.
+- Standalone, host-agnostic telemetry, replacing two divergent per-plugin
+  implementations. Nothing in it is specific to any application: callers supply
+  a service name, an optional namespace for grouping, and an optional global
+  config directory.
 - OpenTelemetry-shaped instruments: `count`, `histogram`, `timer`, `event`.
 - `file` sink — appends JSONL to `$XDG_STATE_HOME/opencode-omp/`, with rotation.
   Zero dependencies, no network.
