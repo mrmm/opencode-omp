@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+#
+# Enforce Conventional Commits.
+#
+# Versions are derived from commit history, so the commit message is not
+# documentation — it is the input to the release. A malformed message means a
+# release that silently does not happen, or happens at the wrong level.
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+# Bypass:                 git commit --no-verify
+
+set -euo pipefail
+
+RED='\033[31m'; GRN='\033[32m'; DIM='\033[2m'; RST='\033[0m'
+
+MSG_FILE="$1"
+# First non-comment, non-empty line.
+HEADER="$(grep -v '^#' "$MSG_FILE" | sed '/^[[:space:]]*$/d' | head -n1 || true)"
+
+[ -z "$HEADER" ] && { echo -e "${RED}✗${RST} Empty commit message."; exit 1; }
+
+# Merge/revert/fixup commits pass through.
+case "$HEADER" in
+  "Merge "*|"Revert "*|"fixup!"*|"squash!"*) exit 0 ;;
+esac
+
+TYPES='feat|fix|perf|revert|docs|style|refactor|test|build|ci|chore'
+SCOPES='hashline|snapcompact|repo|ci|docs|deps|release'
+
+if [[ ! "$HEADER" =~ ^($TYPES)(\([a-z0-9,-]+\))?!?:\ .+ ]]; then
+  echo -e "${RED}✗${RST} Commit message is not a Conventional Commit.\n"
+  echo -e "  ${DIM}got:${RST} $HEADER\n"
+  echo -e "  ${DIM}want:${RST} <type>(<scope>): <subject>\n"
+  echo -e "  ${DIM}types  ${RST}${TYPES//|/, }"
+  echo -e "  ${DIM}scopes ${RST}${SCOPES//|/, }  ${DIM}(optional)${RST}\n"
+  echo -e "  ${DIM}release impact${RST}"
+  echo -e "    feat:              minor"
+  echo -e "    fix: perf: revert: patch"
+  echo -e "    type!:  /  BREAKING CHANGE: footer   major (minor while 0.x)"
+  echo -e "    others:            no release\n"
+  echo -e "  ${DIM}examples${RST}"
+  echo -e "    feat(hashline): support INS.BLK.POST"
+  echo -e "    fix(snapcompact): stop double-encoding frame data"
+  echo -e "    refactor!: drop the legacy tag position\n"
+  exit 1
+fi
+
+# Validate scope against the allow-list when one is present.
+if [[ "$HEADER" =~ ^($TYPES)\(([a-z0-9,-]+)\) ]]; then
+  RAW_SCOPE="${BASH_REMATCH[2]}"
+  IFS=',' read -ra PARTS <<< "$RAW_SCOPE"
+  for s in "${PARTS[@]}"; do
+    if [[ ! "$s" =~ ^($SCOPES)$ ]]; then
+      echo -e "${RED}✗${RST} Unknown scope '${s}'."
+      echo -e "  ${DIM}allowed:${RST} ${SCOPES//|/, }"
+      exit 1
+    fi
+  done
+fi
+
+SUBJECT="${HEADER#*: }"
+if [ ${#HEADER} -gt 100 ]; then
+  echo -e "${RED}✗${RST} Header is ${#HEADER} chars; keep it under 100."
+  exit 1
+fi
+if [[ "$SUBJECT" =~ \.$ ]]; then
+  echo -e "${RED}✗${RST} Subject should not end with a period."
+  exit 1
+fi
+if [[ "$SUBJECT" =~ ^[A-Z][a-z] ]]; then
+  echo -e "${RED}✗${RST} Subject should start lowercase (imperative mood)."
+  exit 1
+fi
+
+echo -e "${GRN}✓${RST} ${DIM}conventional commit${RST}"

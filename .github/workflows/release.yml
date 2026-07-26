@@ -1,0 +1,101 @@
+name: Release
+
+# Auto-wired. Every push to main is evaluated for a release; the commit history
+# decides. No manual trigger, no version chosen by hand.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview only"
+        type: boolean
+        default: true
+
+concurrency:
+  group: release
+  cancel-in-progress: false # never interrupt a half-written release
+
+permissions:
+  contents: write
+  id-token: write # npm provenance
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # The release commit tags itself [skip ci]; this is belt-and-braces.
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history — versions are derived from it
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+
+      - run: bun install --frozen-lockfile
+
+      - name: derive
+        id: derive
+        run: |
+          bun scripts/derive-version.ts
+          echo 'plan<<PLAN' >> "$GITHUB_OUTPUT"
+          bun scripts/derive-version.ts --json >> "$GITHUB_OUTPUT"
+          echo 'PLAN' >> "$GITHUB_OUTPUT"
+          COUNT=$(bun scripts/derive-version.ts --json | node -e \
+            'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).filter(p=>p.next).length))')
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: dry run
+        if: steps.derive.outputs.count != '0' && inputs.dry_run
+        run: bun scripts/auto-release.ts --dry-run
+
+      - name: configure git
+        if: steps.derive.outputs.count != '0' && !inputs.dry_run
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: release
+        id: release
+        if: steps.derive.outputs.count != '0' && !inputs.dry_run
+        run: bun scripts/auto-release.ts
+
+      - name: push
+        if: steps.derive.outputs.count != '0' && !inputs.dry_run
+        run: git push origin main --follow-tags
+
+      - name: github releases
+        if: steps.derive.outputs.count != '0' && !inputs.dry_run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bun scripts/derive-version.ts --json > /tmp/plan.json
+          for TAG in $(git tag --points-at HEAD); do
+            PKG="${TAG%@*}"
+            VER="${TAG##*@}"
+            NOTES=$(node -e "
+              const fs=require('fs');
+              const cl=fs.readFileSync('packages/'+'$PKG'.replace('opencode-omp-','')+'/CHANGELOG.md','utf8');
+              const m=cl.match(new RegExp('^## \\\\[' + '$VER'.replace(/\\./g,'\\\\.') + '\\\\][^\\\\n]*\\\\n([\\\\s\\\\S]*?)(?=^## \\\\[|\\\\Z)','m'));
+              console.log((m?m[1]:'').trim() || 'See CHANGELOG.');
+            ")
+            gh release create "$TAG" --title "$PKG $VER" --notes "$NOTES" || true
+          done
+
+      - name: summary
+        if: always()
+        run: |
+          {
+            echo "### Release"
+            echo ''
+            if [ "${{ steps.derive.outputs.count }}" = "0" ]; then
+              echo 'Nothing to release — no release-worthy commits since the last tags.'
+            else
+              echo '```'
+              bun scripts/derive-version.ts || true
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

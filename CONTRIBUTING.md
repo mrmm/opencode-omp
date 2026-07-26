@@ -24,35 +24,48 @@ Consequences:
 
 While a package is `0.x`, a **minor** bump signals a breaking change.
 
-## Releasing
+## Releasing — automatic
+
+**You never pick a version, and you never run a release command.**
+
+Push to `main`. CI reads the commit history, derives each package's next version,
+bumps it, writes the changelog, tags, and publishes the GitHub release. A release
+you have to remember to run is a ritual, not a process.
+
+The commit message *is* the release input:
+
+| Commit | Bump |
+| --- | --- |
+| `feat: …` | **minor** |
+| `fix: …` · `perf: …` · `revert: …` | **patch** |
+| `feat!: …` or a `BREAKING CHANGE:` footer | **major** (minor while `0.x`) |
+| `docs:` `style:` `refactor:` `test:` `build:` `ci:` `chore:` | none |
+
+Which package gets bumped is decided by **the files a commit touched**, not by its
+scope. `fix(hashline):` that only edits snapcompact files releases snapcompact —
+paths cannot lie, scopes can.
+
+While a package is `0.x`, a breaking change moves the **minor**. Semver §4 says
+anything may change in `0.y.z`, so burning `1.0.0` on the first breaking change
+would falsely signal stability. Reaching `1.0.0` is a deliberate act, never derived.
+
+### Previewing
 
 ```sh
-bun scripts/release.ts <package> <patch|minor|major|x.y.z> [--dry-run]
+bun run release:derive     # what would be released, and why
+bun run release:preview    # + rendered changelog, writes nothing
 ```
 
-The script refuses to proceed unless:
+### Changelogs
 
-1. the working tree is clean,
-2. the target tag does not already exist,
-3. the package CHANGELOG has a **non-empty** `[Unreleased]` section,
-4. `bun test` passes,
-5. `bun run typecheck` passes,
-6. the hygiene gate passes *after* the bump.
+Generated from commits, so nothing that shipped can be silently omitted. Anything
+you write under `[Unreleased]` is **preserved and placed above** the generated list —
+use it when a commit subject cannot carry the necessary context.
 
-Then it bumps `package.json`, promotes `[Unreleased]` to a dated version heading,
-refreshes the changelog link refs, commits `release(<pkg>): <version>`, and creates
-an annotated tag.
+### Manual override
 
-```sh
-git push origin main --follow-tags
-cd packages/<pkg> && npm publish --access public
-```
-
-Always dry-run first:
-
-```sh
-bun scripts/release.ts hashline minor --dry-run
-```
+`workflow_dispatch` on the Release workflow, with `dry_run` toggleable. Reserved for
+recovering from a bad automated run.
 
 ## Hygiene gate
 
@@ -85,23 +98,27 @@ git config core.hooksPath .githooks
 `git push --no-verify` bypasses it. Do that only when you understand what the gate
 would have caught.
 
-## Changelogs
+## Commit messages
 
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Add to `[Unreleased]` in the
-same commit as the change — the release script refuses to promote an empty section,
-so an undocumented change simply cannot be released.
+Enforced by the `commit-msg` hook, because versions are derived from them. A
+malformed message means a release that silently does not happen, or happens at the
+wrong level.
 
-```markdown
-## [Unreleased]
-
-### Added
-- New `foo` option for bar.
-
-### Fixed
-- Baz no longer double-encodes quux.
+```
+<type>(<scope>): <subject>
 ```
 
-Sections: `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security`.
+- **types** — `feat` `fix` `perf` `revert` `docs` `style` `refactor` `test` `build` `ci` `chore`
+- **scopes** (optional) — `hashline` `snapcompact` `repo` `ci` `docs` `deps` `release`
+- subject: lowercase, imperative, no trailing period, header under 100 chars
+
+```
+feat(hashline): support INS.BLK.POST
+fix(snapcompact): stop double-encoding frame data
+refactor!: drop the legacy tag position
+```
+
+Breaking changes take a `!` before the colon, or a `BREAKING CHANGE:` footer.
 
 ## Development
 
