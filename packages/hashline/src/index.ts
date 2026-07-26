@@ -18,20 +18,50 @@
  * FILE CONTENT rather than the rendered Read output, and one 4-hex tag per file
  * instead of a hash on every line (+37% -> under 64 chars).
  */
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { isAbsolute, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { Plugin } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin";
 import { createTelemetry } from "@mrmm/telemetry";
 
 import { resolveConfig, type HashlineConfig } from "./config.ts";
-import { applyPatch, PatchParseError, StaleAnchorError, computeFileHash } from "./patch.ts";
+import {
+	applyPatch,
+	planPatch,
+	PatchParseError,
+	StaleAnchorError,
+	computeFileHash,
+} from "./patch.ts";
 import { HASHLINE_SYSTEM_PROMPT, HASHLINE_SYSTEM_PROMPT_BRIEF } from "./prompt.ts";
 import { formatTagLine, injectTag, isFileRead, parseReadOutput } from "./read-format.ts";
 
-/** Kept in step with package.json by the release tooling. */
-const PKG_VERSION = "0.2.0";
+/**
+ * Read from package.json rather than duplicated as a literal. A hand-maintained
+ * copy had already drifted (0.2.0 against a released 0.3.0) behind a comment
+ * claiming the release tooling kept it current — nothing did.
+ */
+const PKG_VERSION: string = (() => {
+	try {
+		const here = dirname(fileURLToPath(import.meta.url));
+		return (
+			JSON.parse(readFileSync(join(here, "..", "package.json"), "utf8")) as {
+				version?: string;
+			}
+		).version ?? "0.0.0";
+	} catch {
+		return "0.0.0";
+	}
+})();
+
+/** Hoisted so the standing-cost gauge can measure what it adds per turn. */
+const TOOL_DESCRIPTION =
+	"Apply a hashline patch. Anchor every section on the [PATH#TAG] line from " +
+	"your most recent read of that file. Ops: SWAP A.=B: / DEL A.=B / INS.PRE A: / " +
+	"INS.POST A: / INS.HEAD: / INS.TAIL:, with +TEXT body rows. All sections are " +
+	"verified before any file is written; a stale tag aborts the whole patch.";
 
 /** File extension without the dot; "none" when absent. */
 function extOf(p: string): string {
@@ -89,6 +119,30 @@ export function createHashlinePlugin(staticConfig?: Partial<HashlineConfig>): Pl
 			config: cfg.telemetry,
 		});
 		if (tel.enabled) log("telemetry", tel.sinkKinds.join("+"), tel.filePath ?? "");
+
+		// Standing cost: what this plugin adds to EVERY turn whether used or not.
+		// Recorded once per session so the report can weigh it against savings.
+		// Characters, not tokens — the report tokenises with a real BPE so the
+		// plugins stay dependency-free.
+		if (tel.enabled) {
+			const promptChars =
+				cfg.promptStyle === "none"
+					? 0
+					: (cfg.promptStyle === "brief"
+							? HASHLINE_SYSTEM_PROMPT_BRIEF
+							: HASHLINE_SYSTEM_PROMPT
+						).length;
+			const toolDefChars = cfg.registerTool ? TOOL_DESCRIPTION.length + cfg.toolName.length : 0;
+			tel.gauge("hashline.standing_cost.system_prompt_chars", promptChars, {
+				style: cfg.promptStyle,
+			});
+			tel.gauge("hashline.standing_cost.tool_def_chars", toolDefChars);
+			tel.gauge("hashline.standing_cost.total_chars", promptChars + toolDefChars);
+			tel.count("hashline.session.started", 1, {
+				annotate: cfg.annotateReads,
+				tool: cfg.registerTool,
+			});
+		}
 
 		log("config", JSON.stringify({ ...cfg, exclude: `${cfg.exclude.length} patterns` }));
 
@@ -203,11 +257,7 @@ export function createHashlinePlugin(staticConfig?: Partial<HashlineConfig>): Pl
 		if (cfg.enabled && cfg.registerTool) {
 			hooks.tool = {
 				[cfg.toolName]: tool({
-					description:
-						"Apply a hashline patch. Anchor every section on the [PATH#TAG] line from " +
-						"your most recent read of that file. Ops: SWAP A.=B: / DEL A.=B / INS.PRE A: / " +
-						"INS.POST A: / INS.HEAD: / INS.TAIL:, with +TEXT body rows. All sections are " +
-						"verified before any file is written; a stale tag aborts the whole patch.",
+					description: TOOL_DESCRIPTION,
 					args: {
 						patch: tool.schema
 							.string()
@@ -218,7 +268,32 @@ export function createHashlinePlugin(staticConfig?: Partial<HashlineConfig>): Pl
 					async execute(args, ctx) {
 						const projectRoot = ctx.worktree || ctx.directory || root;
 						const stop = tel.timer("hashline.patch.duration_ms");
+						tel.count("hashline.patch.attempted");
 						try {
+							// Capture pre-edit state so we can answer the question that
+							// actually decides whether this plugin earns its cost:
+							// would the built-in exact-string edit have worked here?
+							const preflight = await planPatch(args.patch, projectRoot);
+							for (const plan of preflight) {
+								const lines = plan.original.split("\n");
+								const targets = (plan.edits as Array<{ lineNum?: number }>)
+									.map((e) => e.lineNum)
+									.filter((n): n is number => typeof n === "number");
+								for (const ln of targets) {
+									const content = lines[ln - 1];
+									if (content === undefined) continue;
+									const occurrences = lines.filter((l) => l === content).length;
+									// occurrences > 1 -> exact-string matching is ambiguous and
+									// the built-in edit tool would refuse. Only those edits
+									// represent capability this plugin uniquely provides.
+									tel.count("hashline.patch.target", 1, {
+										unique: occurrences === 1,
+										blank: content.trim() === "",
+									});
+									tel.histogram("hashline.patch.target_occurrences", occurrences);
+								}
+							}
+
 							const applied = await applyPatch(args.patch, projectRoot);
 							tel.count("hashline.patch.applied", 1, { sections: applied.length });
 							tel.histogram("hashline.patch.sections", applied.length);
@@ -246,6 +321,18 @@ export function createHashlinePlugin(staticConfig?: Partial<HashlineConfig>): Pl
 								// The safety net firing. This rate is the single best
 								// evidence that content-anchoring earns its keep.
 								tel.count("hashline.patch.stale_anchor", 1, { ext: extOf(err.path) });
+								// A stale catch prevents a wrong-file edit. The averted cost is
+								// the corrective cycle: re-read the file plus re-issue the patch.
+								// Recorded as chars so the report can price it in tokens.
+								try {
+									const abs = resolve(projectRoot, err.path);
+									const size = (await readFile(abs, "utf8")).length;
+									tel.histogram("hashline.patch.retry_chars_avoided", size + args.patch.length, {
+										ext: extOf(err.path),
+									});
+								} catch {
+									/* size unavailable; the counter above still records the catch */
+								}
 								stop({ result: "stale" });
 								return {
 									title: `${cfg.toolName}: stale anchor`,

@@ -9,6 +9,17 @@ Tags are `opencode-omp-snapcompact@<version>`.
 
 ## [Unreleased]
 
+### Added
+
+- Decision metrics: standing cost of the two tool definitions, invocation
+  counts for both tools, and signed net tokens saved per compaction, so the
+  plugin's cost can be weighed against what it actually returns.
+
+### Fixed
+
+- The package version is read from `package.json` rather than a duplicated
+  literal that could drift.
+
 ## [0.3.0] - 2026-07-26
 
 ### Breaking

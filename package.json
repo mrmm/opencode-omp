@@ -20,11 +20,14 @@
     "prepare": "git config core.hooksPath .githooks || true",
     "release:derive": "bun scripts/derive-version.ts",
     "release:preview": "bun scripts/auto-release.ts --dry-run",
-    "release:auto": "bun scripts/auto-release.ts"
+    "release:auto": "bun scripts/auto-release.ts",
+    "telemetry": "bun scripts/telemetry-report.ts",
+    "telemetry:verdict": "bun scripts/telemetry-verdict.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "js-tiktoken": "^1.0.21"
   },
   "engines": {
     "bun": ">=1.3.14"

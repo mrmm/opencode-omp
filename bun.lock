@@ -6,12 +6,13 @@
       "name": "opencode-omp",
       "devDependencies": {
         "@types/bun": "latest",
+        "js-tiktoken": "^1.0.21",
         "typescript": "^5.7.0",
       },
     },
     "packages/hashline": {
       "name": "@mrmm/opencode-omp-hashline",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "dependencies": {
         "@mrmm/telemetry": "workspace:*",
         "@oh-my-pi/hashline": "^17.1.3",
@@ -22,7 +23,7 @@
     },
     "packages/snapcompact": {
       "name": "@mrmm/opencode-omp-snapcompact",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "dependencies": {
         "@mrmm/telemetry": "workspace:*",
         "@oh-my-pi/snapcompact": "^17.1.3",
@@ -34,7 +35,7 @@
     },
     "packages/telemetry": {
       "name": "@mrmm/telemetry",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "devDependencies": {
         "@opentelemetry/api": "^1.9.1",
       },

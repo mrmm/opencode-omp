@@ -9,6 +9,14 @@ Tags are `telemetry@<version>`.
 
 ## [Unreleased]
 
+### Added
+
+- `gauge` instrument for point-in-time values such as standing cost, which must
+  not be summed like a counter.
+- Metric-contract tests pinning the names the verdict report depends on: a
+  rename in a plugin would otherwise produce a wrong verdict silently rather
+  than an error.
+
 ## [0.1.0] - 2026-07-26
 
 ### Added

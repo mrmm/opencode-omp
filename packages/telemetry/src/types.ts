@@ -49,8 +49,13 @@ export const DEFAULT_TELEMETRY_CONFIG: TelemetryConfig = {
 export interface Measurement {
 	/** Dotted metric name, e.g. `hashline.patch.applied`. */
 	name: string;
-	/** counter → monotonic sum; histogram → distribution; event → payload only. */
-	instrument: "counter" | "histogram" | "event";
+	/**
+	 * counter   → monotonic sum
+	 * histogram → distribution
+	 * gauge     → point-in-time value (standing cost, config snapshot)
+	 * event     → payload only, no numeric meaning
+	 */
+	instrument: "counter" | "histogram" | "gauge" | "event";
 	value: number;
 	attributes: Attributes;
 	/** Free-form detail for `event`, where a scalar cannot carry the meaning. */

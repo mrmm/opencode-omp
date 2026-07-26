@@ -117,6 +117,14 @@ export class Telemetry {
 		this.push({ name, instrument: "histogram", value, attributes });
 	}
 
+	/**
+	 * A point-in-time value rather than an accumulation — the standing cost a
+	 * plugin imposes, a config snapshot. Recorded once per session, not per use.
+	 */
+	gauge(name: string, value: number, attributes: Attributes = {}): void {
+		this.push({ name, instrument: "gauge", value, attributes });
+	}
+
 	/** Something a scalar cannot express. Payload reaches the file sink only. */
 	event(name: string, payload: Record<string, unknown> = {}, attributes: Attributes = {}): void {
 		this.push({ name, instrument: "event", value: 1, attributes, payload });

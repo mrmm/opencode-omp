@@ -25,7 +25,16 @@ export interface HashlineConfig {
 	maxFileSize: number;
 	/** Skip files with more than this many lines. 0 = no limit. */
 	maxLines: number;
-	/** How much patch-language guidance to inject. */
+	/**
+	 * How much patch-language guidance to inject.
+	 *
+	 * Defaults to "brief". The full text costs ~476 tokens on EVERY turn versus
+	 * ~154 for brief — 85% of this plugin's standing cost sat in that one string.
+	 * A live session confirmed the model still drives the tool correctly from the
+	 * brief version, including a multi-hunk patch, so the extra 322 tokens/turn
+	 * bought nothing measurable. Set "full" if you see the model misusing the
+	 * grammar.
+	 */
 	promptStyle: PromptStyle;
 	/** Where the tag line is placed in read output. */
 	tagPosition: TagPosition;
@@ -70,7 +79,7 @@ export const DEFAULT_CONFIG: HashlineConfig = {
 	includeOnly: [],
 	maxFileSize: 1_048_576,
 	maxLines: 0,
-	promptStyle: "full",
+	promptStyle: "brief",
 	tagPosition: "after-type",
 	debug: false,
 	telemetry: DEFAULT_TELEMETRY_CONFIG,

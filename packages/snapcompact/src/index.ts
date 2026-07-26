@@ -14,8 +14,10 @@
  * it plainly — prose measures -56.8%. Rendering unconditionally would degrade
  * prose-heavy sessions, so the gate is a correctness requirement, on by default.
  */
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { isAbsolute, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import type { Plugin } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin";
@@ -32,8 +34,27 @@ import {
 	type ModelRef,
 } from "./render.ts";
 
-/** Kept in step with package.json by the release tooling. */
-const PKG_VERSION = "0.2.0";
+/** Read from package.json so it cannot drift from the released version. */
+const PKG_VERSION: string = (() => {
+	try {
+		const here = dirname(fileURLToPath(import.meta.url));
+		return (JSON.parse(readFileSync(join(here, "..", "package.json"), "utf8")) as { version?: string })
+			.version ?? "0.0.0";
+	} catch {
+		return "0.0.0";
+	}
+})();
+
+/** Hoisted so the standing-cost gauge can measure what they add per turn. */
+const RENDER_DESCRIPTION =
+	"Compress token-dense text (JSON, logs, tool output) into bitmap PNG frames " +
+	"a vision model reads back directly. Saves ~35-40% on dense content. " +
+	"DECLINES when text is too token-sparse to profit — prose and code usually " +
+	"cost MORE as images. No LLM call, no API cost, deterministic.";
+
+const ESTIMATE_DESCRIPTION =
+	"Estimate whether bitmap framing would save tokens for some text, without " +
+	"rendering. Reports measured density, frame economics, and projected saving.";
 
 function pct(n: number): string {
 	return `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
@@ -75,6 +96,24 @@ export function createSnapcompactPlugin(
 
 		log("config", JSON.stringify(cfg));
 
+		// Standing cost: what this plugin adds to EVERY turn whether used or not.
+		// Two tool definitions are not free, and snapcompact also drags a ~139MB
+		// native dependency. Recorded once per session so the report can weigh
+		// that against realised savings and answer "is this worth keeping".
+		if (tel.enabled) {
+			const renderDesc = cfg.registerRenderTool ? RENDER_DESCRIPTION.length : 0;
+			const estimateDesc = cfg.registerEstimateTool ? ESTIMATE_DESCRIPTION.length : 0;
+			tel.gauge("snapcompact.standing_cost.tool_def_chars", renderDesc + estimateDesc, {
+				tools:
+					(cfg.registerRenderTool ? 1 : 0) + (cfg.registerEstimateTool ? 1 : 0),
+			});
+			tel.gauge("snapcompact.standing_cost.total_chars", renderDesc + estimateDesc);
+			tel.count("snapcompact.session.started", 1, {
+				enabled: cfg.enabled,
+				mode: cfg.mode,
+			});
+		}
+
 		const modelRef = (): ModelRef =>
 			cfg.shapeOverride ? { api: cfg.shapeOverride } : {};
 
@@ -82,11 +121,7 @@ export function createSnapcompactPlugin(
 
 		if (cfg.registerRenderTool) {
 			tools[`${cfg.toolPrefix}_render`] = tool({
-				description:
-					"Compress token-dense text (JSON, logs, tool output) into bitmap PNG frames " +
-					"a vision model reads back directly. Saves ~35-40% on dense content. " +
-					"DECLINES when text is too token-sparse to profit — prose and code usually " +
-					"cost MORE as images. No LLM call, no API cost, deterministic.",
+				description: RENDER_DESCRIPTION,
 				args: {
 					text: tool.schema
 						.string()
@@ -102,6 +137,7 @@ export function createSnapcompactPlugin(
 						.describe("Bypass the density gate. Still reports the result."),
 				},
 				async execute(args, ctx) {
+					tel.count("snapcompact.render.invoked");
 					const forced = (args.force ?? false) && cfg.allowForce;
 					if (args.force && !cfg.allowForce) {
 						log("force requested but disabled by config");
@@ -210,6 +246,12 @@ export function createSnapcompactPlugin(
 						"snapcompact.saving_estimate_error_pct",
 						saving - decision.estimatedSavingPct,
 					);
+					// Signed net tokens: positive means the frames cost fewer tokens than
+					// the text would have. Summed by the report into a bottom line.
+					tel.histogram(
+						"snapcompact.net_tokens_saved",
+						decision.density.tokens - imageTokens,
+					);
 
 					ctx.metadata({
 						title: `${cfg.toolPrefix}: ${frames.length} frame(s), ${pct(saving)}`,
@@ -244,11 +286,10 @@ export function createSnapcompactPlugin(
 
 		if (cfg.registerEstimateTool) {
 			tools[`${cfg.toolPrefix}_estimate`] = tool({
-				description:
-					"Estimate whether bitmap framing would save tokens for some text, without " +
-					"rendering. Reports measured density, frame economics, and projected saving.",
+				description: ESTIMATE_DESCRIPTION,
 				args: { text: tool.schema.string().describe("Text to evaluate.") },
 				async execute(args) {
+					tel.count("snapcompact.estimate.invoked");
 					const model = modelRef();
 					const econ = economicsFor(model);
 					const d = density(args.text);

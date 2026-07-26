@@ -78,7 +78,9 @@ export class OtelSink implements Sink {
 		for (const r of records) {
 			try {
 				const attrs: Attributes = { ...r.attributes, session: r.session };
-				if (r.instrument === "histogram") {
+				// Gauges ride the histogram instrument: OTel's sync gauge requires an
+				// observable callback, which does not fit a push-at-will API.
+				if (r.instrument === "histogram" || r.instrument === "gauge") {
 					let h = this.histograms.get(r.name);
 					if (!h) {
 						h = meter.createHistogram(r.name);

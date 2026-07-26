@@ -111,19 +111,56 @@ bun add @mrmm/opencode-omp-hashline
 If you are running the broken `opencode-hashline`, remove it — the two annotate the
 same reads and will fight.
 
-## Telemetry
+## Telemetry — is a plugin worth keeping?
 
-Both plugins record usage locally so their design assumptions can be checked
-against reality — the density thresholds and overhead comparisons here were
-derived from synthetic corpora, and only real data confirms them.
+A plugin's real cost is not what it does when used; it is what it charges when
+it is **not** used. Every tool definition and system-prompt fragment is re-sent
+on every turn, forever. A plugin invoked twice a week can easily cost more than
+it ever saves.
 
-**Local JSONL by default. No network code, enforced by test.** OpenTelemetry is
-supported through an optional peer dependency, so you can route to any backend
-without this repository implementing transport.
+So the metrics are built to answer one question, and they will happily say no.
 
 ```sh
-bun scripts/telemetry-report.ts     # counters, percentiles, derived findings
+bun run telemetry            # counters, percentiles
+bun run telemetry:verdict    # cost vs benefit, with a recommendation
 ```
+
+```
+cost is 579/turn = 492 prompt (85%) + 87 tool def
+lever           promptStyle "brief" would cut ~330 tokens/turn
+
+standing cost   −17370 tokens   (paid every turn, used or not)
+realised gain   +205 tokens
+net             −17165 tokens
+confidence      none
+INSUFFICIENT DATA — keep it enabled and revisit; do not decide on this
+```
+
+That output is what set this repository's default `promptStyle` to `brief`:
+85% of hashline's standing cost was one string, and a live session showed the
+model drove the tool correctly without the long version.
+
+### The decisive metric
+
+For hashline, the report answers **would the built-in edit tool have worked
+anyway?** It records, per edit target, whether that line's content was unique
+in the file. Non-unique targets are edits exact-string matching would refuse —
+the only ones representing capability you cannot get for free.
+
+If that share is near zero, hashline is mostly overhead for you, and the report
+says so.
+
+### Honesty in the accounting
+
+- Tag overhead is counted as a **cost**, because it is one.
+- "Versus per-line hashing" is reported separately, since it is only an
+  advantage over that specific design — not over doing nothing.
+- Confidence tracks sample size, not the sign of the result, so a flattering
+  number from three data points is labelled `none`.
+
+**Local JSONL by default. No network code, enforced by test.** OpenTelemetry is
+available through an optional peer dependency, so you can route to any backend
+without this repository implementing transport.
 
 Disable anywhere:
 
