@@ -98,9 +98,38 @@ same reads and will fight.
 
 ```sh
 bun install
-bun test          # 72 tests
+bun test
 bun run typecheck
+bun run check              # typecheck + test + version hygiene
 ```
+
+Enable the hooks once per clone (also run automatically by `bun install`):
+
+```sh
+git config core.hooksPath .githooks
+```
+
+## Releases are automatic
+
+Nobody picks a version. Push to `main`; CI reads the commit history, derives each
+package's next version, writes the changelog, tags, and publishes.
+
+| Commit | Bump |
+| --- | --- |
+| `feat:` | minor |
+| `fix:` `perf:` `revert:` | patch |
+| `feat!:` or `BREAKING CHANGE:` footer | major (minor while `0.x`) |
+| `docs:` `chore:` `ci:` `test:` … | none |
+
+Which package moves is decided by **the files a commit touched**, not its scope —
+paths cannot lie, scopes can. A `feat(ci):` that only edits `.github/` bumps nothing.
+
+```sh
+bun run release:derive     # what would release, and why
+bun run release:preview    # + rendered changelog, writes nothing
+```
+
+Details in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Specs
 
