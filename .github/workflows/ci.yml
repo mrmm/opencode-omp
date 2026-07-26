@@ -3,7 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
-    tags: ["*@*"]
+    # Match ALL tags, not just well-formed ones. Filtering to "*@*" here would
+    # mean a malformed tag never triggers CI at all, so the tag-format job could
+    # never reject it — the gate must see bad input in order to fail on it.
+    tags: ["**"]
   pull_request:
     branches: [main]
 
