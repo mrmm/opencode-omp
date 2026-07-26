@@ -9,6 +9,23 @@ Tags are `opencode-omp-snapcompact@<version>`.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-26
+
+### Added
+
+- Decision metrics: standing cost of the two tool definitions, invocation
+  counts for both tools, and signed net tokens saved per compaction, so the
+  plugin's cost can be weighed against what it actually returns.
+
+### Fixed
+
+- The package version is read from `package.json` rather than a duplicated
+  literal that could drift.
+
+### Added
+
+- **telemetry**: metrics that answer whether a plugin is worth keeping (c9906fa5)
+
 ### Added
 
 - Decision metrics: standing cost of the two tool definitions, invocation
@@ -109,8 +126,9 @@ why the package defaults to disabled.
 - Requires `@oh-my-pi/pi-natives` (~139 MB) for rasterization. This is why the
   package ships separately from `opencode-omp-hashline`.
 
-[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-snapcompact@0.3.0...HEAD
+[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-snapcompact@0.4.0...HEAD
 [0.1.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-snapcompact@0.1.0
 [0.1.1]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-snapcompact@0.1.1
 [0.2.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-snapcompact@0.2.0
 [0.3.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-snapcompact@0.3.0
+[0.4.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-snapcompact@0.4.0

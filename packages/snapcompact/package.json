@@ -1,6 +1,6 @@
 {
   "name": "@mrmm/opencode-omp-snapcompact",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "OpenCode plugin: density-gated bitmap context compression, backed by @oh-my-pi/snapcompact. Renders dense text to PNG frames vision models read back.",
   "keywords": [

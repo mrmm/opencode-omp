@@ -9,6 +9,34 @@ Tags are `opencode-omp-hashline@<version>`.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-26
+
+### Changed
+
+- **`promptStyle` now defaults to `brief`.** The full grammar text cost ~476
+  tokens on every turn against ~154 for brief, and accounted for 85% of this
+  plugin's standing cost. A live session confirmed the model still drives the
+  tool correctly from the brief version, including a multi-hunk patch, so the
+  extra ~322 tokens/turn bought nothing measurable. Set `"promptStyle": "full"`
+  to restore the long form.
+
+### Added
+
+- Decision metrics, so the plugin can be judged rather than assumed:
+  standing cost split into system prompt versus tool definition; per-target
+  uniqueness (whether the built-in exact-string edit would have worked anyway);
+  corrective-cycle cost averted by each stale-anchor catch; patch attempt count.
+
+### Fixed
+
+- The package version is read from `package.json` instead of a duplicated
+  literal. The copy had already drifted to 0.2.0 against a released 0.3.0,
+  behind a comment claiming release tooling kept it current — nothing did.
+
+### Added
+
+- **telemetry**: metrics that answer whether a plugin is worth keeping (c9906fa5)
+
 ### Changed
 
 - **`promptStyle` now defaults to `brief`.** The full grammar text cost ~476
@@ -121,8 +149,9 @@ unmaintained since 2026-05-05):
 - Block ops (`SWAP.BLK`, `DEL.BLK`, `INS.BLK.POST`) and file ops (`REM`, `MV`) are
   out of scope for v1; they require tree-sitter from the native addon.
 
-[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-hashline@0.3.0...HEAD
+[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-hashline@0.4.0...HEAD
 [0.1.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.1.0
 [0.1.1]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.1.1
 [0.2.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.2.0
 [0.3.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.3.0
+[0.4.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.4.0

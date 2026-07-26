@@ -9,6 +9,29 @@ Tags are `telemetry@<version>`.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-26
+
+### Fixed
+
+- The pre-push hook now runs typecheck and tests, not only the version gate. A
+  typecheck failure reached `main` because the hook validated versions while
+  compiling nothing.
+### Added
+
+- `gauge` instrument for point-in-time values such as standing cost, which must
+  not be summed like a counter.
+- Metric-contract tests pinning the names the verdict report depends on: a
+  rename in a plugin would otherwise produce a wrong verdict silently rather
+  than an error.
+
+### Fixed
+
+- **repo**: gate pushes on typecheck and tests, not just versions (2abfffc5)
+
+### Added
+
+- **telemetry**: metrics that answer whether a plugin is worth keeping (c9906fa5)
+
 ### Fixed
 
 - The pre-push hook now runs typecheck and tests, not only the version gate. A
@@ -71,5 +94,6 @@ Tags are `telemetry@<version>`.
 - Telemetry never breaks its caller: unwritable sinks, circular payloads, and a
   missing OTel SDK all degrade to no-ops, each covered by a test.
 
-[Unreleased]: https://github.com/mrmm/opencode-omp/compare/telemetry@0.1.0...HEAD
+[Unreleased]: https://github.com/mrmm/opencode-omp/compare/telemetry@0.2.0...HEAD
 [0.1.0]: https://github.com/mrmm/opencode-omp/releases/tag/telemetry@0.1.0
+[0.2.0]: https://github.com/mrmm/opencode-omp/releases/tag/telemetry@0.2.0
