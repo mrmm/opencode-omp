@@ -9,6 +9,16 @@ Tags are `opencode-omp-snapcompact@<version>`.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-26
+
+### Breaking
+
+- **repo**: scope packages to @mrmm and publish from CI (8a6cbc97)
+
+### Documentation
+
+- **repo**: remove private process metadata from a public repo (32b283f8)
+
 ## [0.1.1] - 2026-07-26
 
 ### Fixed
@@ -78,6 +88,7 @@ why the package defaults to disabled.
 - Requires `@oh-my-pi/pi-natives` (~139 MB) for rasterization. This is why the
   package ships separately from `opencode-omp-hashline`.
 
-[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-snapcompact@0.1.1...HEAD
+[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-snapcompact@0.2.0...HEAD
 [0.1.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-snapcompact@0.1.0
 [0.1.1]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-snapcompact@0.1.1
+[0.2.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-snapcompact@0.2.0
