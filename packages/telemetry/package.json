@@ -1,6 +1,6 @@
 {
   "name": "@mrmm/telemetry",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "Local-first telemetry with an optional OpenTelemetry bridge. JSONL by default, zero dependencies, no network.",
   "keywords": [

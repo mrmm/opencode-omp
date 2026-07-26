@@ -9,6 +9,25 @@ Tags are `telemetry@<version>`.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-26
+
+### Added
+
+- Standalone, host-agnostic telemetry, replacing two divergent per-plugin
+  implementations. Nothing in it is specific to any application: callers supply
+  a service name, an optional namespace for grouping, and an optional global
+  config directory.
+- OpenTelemetry-shaped instruments: `count`, `histogram`, `timer`, `event`.
+- `file` sink — appends JSONL to `$XDG_STATE_HOME/opencode-omp/`, with rotation.
+
+### Breaking
+
+- **telemetry**: make the package standalone and host-agnostic (0fb3c8e1)
+
+### Added
+
+- **telemetry**: shared OpenTelemetry-shaped telemetry package (3db450dc)
+
 ### Added
 
 - Standalone, host-agnostic telemetry, replacing two divergent per-plugin
@@ -39,4 +58,5 @@ Tags are `telemetry@<version>`.
 - Telemetry never breaks its caller: unwritable sinks, circular payloads, and a
   missing OTel SDK all degrade to no-ops, each covered by a test.
 
-[Unreleased]: https://github.com/mrmm/opencode-omp/compare/main...HEAD
+[Unreleased]: https://github.com/mrmm/opencode-omp/compare/telemetry@0.1.0...HEAD
+[0.1.0]: https://github.com/mrmm/opencode-omp/releases/tag/telemetry@0.1.0

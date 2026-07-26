@@ -9,6 +9,16 @@ Tags are `opencode-omp-hashline@<version>`.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-26
+
+### Breaking
+
+- **telemetry**: make the package standalone and host-agnostic (0fb3c8e1)
+
+### Added
+
+- **telemetry**: shared OpenTelemetry-shaped telemetry package (3db450dc)
+
 ## [0.2.0] - 2026-07-26
 
 ### Breaking
@@ -89,7 +99,8 @@ unmaintained since 2026-05-05):
 - Block ops (`SWAP.BLK`, `DEL.BLK`, `INS.BLK.POST`) and file ops (`REM`, `MV`) are
   out of scope for v1; they require tree-sitter from the native addon.
 
-[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-hashline@0.2.0...HEAD
+[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-hashline@0.3.0...HEAD
 [0.1.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.1.0
 [0.1.1]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.1.1
 [0.2.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.2.0
+[0.3.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.3.0
