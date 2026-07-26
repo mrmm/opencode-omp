@@ -1,4 +1,4 @@
-# opencode-omp-hashline
+# @mrmm/opencode-omp-hashline
 
 File-hash-anchored patch editing for OpenCode, backed by
 [`@oh-my-pi/hashline`](https://www.npmjs.com/package/@oh-my-pi/hashline).
@@ -73,19 +73,19 @@ directly.
 ## Install
 
 ```sh
-bun add opencode-omp-hashline
+bun add @mrmm/opencode-omp-hashline
 ```
 
 ```jsonc
 // ~/.config/opencode/opencode.jsonc
-{ "plugin": ["opencode-omp-hashline"] }
+{ "plugin": ["@mrmm/opencode-omp-hashline"] }
 ```
 
 Remove `opencode-hashline` if present — both annotate the same reads.
 
 ## Configuration
 
-`opencode-omp-hashline.jsonc`, in your project root or `~/.config/opencode/`
+`@mrmm/opencode-omp-hashline.jsonc`, in your project root or `~/.config/opencode/`
 (project wins):
 
 ```jsonc
@@ -128,7 +128,7 @@ addon. File ops (`REM`, `MV`) and 3-way-merge recovery are likewise deferred.
 ## API
 
 ```ts
-import { applyPatch, planPatch, computeFileHash } from "opencode-omp-hashline";
+import { applyPatch, planPatch, computeFileHash } from "@mrmm/opencode-omp-hashline";
 
 const tag = computeFileHash(await readFile(p, "utf8"));
 const plans = await planPatch(patchText, projectRoot);   // preflight only

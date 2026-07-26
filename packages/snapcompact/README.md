@@ -1,4 +1,4 @@
-# opencode-omp-snapcompact
+# @mrmm/opencode-omp-snapcompact
 
 Density-gated bitmap context compression for OpenCode, backed by
 [`@oh-my-pi/snapcompact`](https://www.npmjs.com/package/@oh-my-pi/snapcompact).
@@ -43,21 +43,21 @@ reason it exists as a separate implementation rather than a thin passthrough.
 ## Install
 
 ```sh
-bun add opencode-omp-snapcompact
+bun add @mrmm/opencode-omp-snapcompact
 ```
 
 ```jsonc
 // ~/.config/opencode/opencode.jsonc
-{ "plugin": ["opencode-omp-snapcompact"] }
+{ "plugin": ["@mrmm/opencode-omp-snapcompact"] }
 ```
 
 ```jsonc
-// opencode-omp-snapcompact.jsonc
+// @mrmm/opencode-omp-snapcompact.jsonc
 { "enabled": true }
 ```
 
 ⚠️ Pulls `@oh-my-pi/pi-natives` (~139 MB) for rasterization. That is why it ships
-separately from `opencode-omp-hashline`.
+separately from `@mrmm/opencode-omp-hashline`.
 
 ## Tools
 
@@ -133,7 +133,7 @@ The tool path works standalone; auto-compaction is additive.
 
 ```ts
 import { density, shouldCompact, renderFrames, toAttachments, economicsFor }
-  from "opencode-omp-snapcompact";
+  from "@mrmm/opencode-omp-snapcompact";
 
 const econ = economicsFor({ api: "anthropic", id: "claude-opus-4-6" });
 const decision = shouldCompact(text, econ);

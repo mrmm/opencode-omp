@@ -31,6 +31,10 @@ const CHECK_TAGS = process.argv.includes("--tags");
 const SEMVER =
 	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
 
+function tagNameFor(pkgName: string): string {
+	return pkgName.replace(/^@[^/]+\//, "");
+}
+
 interface Pkg {
 	dir: string;
 	name: string;
@@ -164,8 +168,9 @@ for (const pkg of packages) {
 	}
 
 	// 5/6/7 — tags
-	const expectedTag = `${pkg.name}@${pkg.version}`;
-	const pkgTags = allTags.filter((t) => t.startsWith(`${pkg.name}@`));
+	const tagBase = tagNameFor(pkg.name);
+	const expectedTag = `${tagBase}@${pkg.version}`;
+	const pkgTags = allTags.filter((t) => t.startsWith(`${tagBase}@`));
 
 	for (const t of allTags) {
 		if (/^v?\d+\.\d+\.\d+/.test(t)) {
@@ -177,9 +182,9 @@ for (const pkg of packages) {
 		}
 	}
 
-	const headTagForPkg = headTags.find((t) => t.startsWith(`${pkg.name}@`));
+	const headTagForPkg = headTags.find((t) => t.startsWith(`${tagBase}@`));
 	if (headTagForPkg) {
-		const tagged = headTagForPkg.slice(pkg.name.length + 1);
+		const tagged = headTagForPkg.slice(tagBase.length + 1);
 		if (tagged !== pkg.version) {
 			fail(
 				`${label}: HEAD is tagged ${headTagForPkg} but package.json says ${pkg.version}`,

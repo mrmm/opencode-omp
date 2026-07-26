@@ -39,6 +39,9 @@ export interface Commit {
 
 export interface Plan {
 	name: string;
+	/** Git tag base — the package name with any npm scope stripped, since a
+	 *  slash in a tag is legal but awkward to type and to match. */
+	tagName: string;
 	dir: string;
 	current: string;
 	bump: Bump;
@@ -94,8 +97,13 @@ export function applyBump(version: string, bump: Bump): string | null {
 	return `${maj}.${min}.${pat + 1}`;
 }
 
+/** `@scope/name` -> `name`. Tags never carry the scope. */
+export function tagNameFor(pkgName: string): string {
+	return pkgName.replace(/^@[^/]+\//, "");
+}
+
 function latestTagFor(pkgName: string): string | null {
-	const tags = git(`tag -l ${JSON.stringify(`${pkgName}@*`)} --sort=-v:refname`)
+	const tags = git(`tag -l ${JSON.stringify(`${tagNameFor(pkgName)}@*`)} --sort=-v:refname`)
 		.split("\n")
 		.filter(Boolean);
 	return tags[0] ?? null;
@@ -179,6 +187,7 @@ export function buildPlans(): Plan[] {
 
 		plans.push({
 			name: pj.name,
+			tagName: tagNameFor(pj.name),
 			dir,
 			current: pj.version,
 			bump,

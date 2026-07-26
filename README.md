@@ -7,8 +7,8 @@ rather than reimplementing them.
 
 | Package | What | Install size |
 |---|---|---|
-| [`opencode-omp-hashline`](packages/hashline) | File-hash-anchored patch editing | **~400 KB** (native-free) |
-| [`opencode-omp-snapcompact`](packages/snapcompact) | Density-gated bitmap context compression | ~180 MB (needs the native rasterizer) |
+| [`@mrmm/opencode-omp-hashline`](packages/hashline) | File-hash-anchored patch editing | **~400 KB** (native-free) |
+| [`@mrmm/opencode-omp-snapcompact`](packages/snapcompact) | Density-gated bitmap context compression | ~180 MB (needs the native rasterizer) |
 
 Separate packages so hashline users never pull snapcompact's 139 MB native addon.
 
@@ -81,12 +81,20 @@ prose-heavy sessions materially worse.
 
 ## Install
 
+Published to this repository's GitHub Packages registry. Point the scope at it once:
+
+```sh
+echo '@mrmm:registry=https://npm.pkg.github.com' >> ~/.npmrc
+bun add @mrmm/opencode-omp-hashline
+```
+
+
 ```jsonc
 // ~/.config/opencode/opencode.jsonc
 {
   "plugin": [
-    "opencode-omp-hashline"
-    // "opencode-omp-snapcompact"   // opt-in; see its README
+    "@mrmm/opencode-omp-hashline"
+    // "@mrmm/opencode-omp-snapcompact"   // opt-in; see its README
   ]
 }
 ```

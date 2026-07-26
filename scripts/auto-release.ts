@@ -73,12 +73,12 @@ function renderChangelog(existing: string, plan: Plan): string {
 	}
 
 	out = out
-		.replace(/^\[unreleased\]:.*$/im, `[Unreleased]: ${REPO}/compare/${plan.name}@${plan.next}...HEAD`)
+		.replace(/^\[unreleased\]:.*$/im, `[Unreleased]: ${REPO}/compare/${plan.tagName}@${plan.next}...HEAD`)
 		.replace(/\n{3,}/g, "\n\n")
 		.replace(/\n*$/, "\n");
 
 	if (!new RegExp(`^\\[${plan.next?.replace(/\./g, "\\.")}\\]:`, "im").test(out)) {
-		out += `[${plan.next}]: ${REPO}/releases/tag/${plan.name}@${plan.next}\n`;
+		out += `[${plan.next}]: ${REPO}/releases/tag/${plan.tagName}@${plan.next}\n`;
 	}
 	return out;
 }
@@ -153,14 +153,14 @@ try {
 
 step("committing");
 sh(`git add ${touched.map((f) => JSON.stringify(f)).join(" ")}`);
-const summary = plans.map((p) => `${p.name}@${p.next}`).join(", ");
+const summary = plans.map((p) => `${p.tagName}@${p.next}`).join(", ");
 // [skip ci] prevents the release commit from re-triggering the release workflow.
 sh(`git commit -m ${JSON.stringify(`chore(release): ${summary} [skip ci]`)}`);
 done(`committed ${summary}`);
 
 step("tagging");
 for (const p of plans) {
-	const tag = `${p.name}@${p.next}`;
+	const tag = `${p.tagName}@${p.next}`;
 	sh(`git tag -a ${JSON.stringify(tag)} -m ${JSON.stringify(`${p.name} ${p.next}`)}`);
 	done(`tagged ${tag}`);
 }
