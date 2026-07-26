@@ -154,8 +154,18 @@ try {
 step("committing");
 sh(`git add ${touched.map((f) => JSON.stringify(f)).join(" ")}`);
 const summary = plans.map((p) => `${p.tagName}@${p.next}`).join(", ");
+
+// Header stays short enough for the commit-msg hook regardless of how many
+// packages release together; the full list goes in the body, which is the
+// right place for it anyway.
+const header =
+	plans.length === 1
+		? `chore(release): ${plans[0]?.tagName}@${plans[0]?.next} [skip ci]`
+		: `chore(release): ${plans.length} packages [skip ci]`;
+const body = plans.map((p) => `${p.tagName}@${p.next}`).join("\n");
+
 // [skip ci] prevents the release commit from re-triggering the release workflow.
-sh(`git commit -m ${JSON.stringify(`chore(release): ${summary} [skip ci]`)}`);
+sh(`git commit -m ${JSON.stringify(header)} -m ${JSON.stringify(body)}`);
 done(`committed ${summary}`);
 
 step("tagging");
