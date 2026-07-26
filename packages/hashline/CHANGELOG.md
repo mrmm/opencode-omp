@@ -8,6 +8,9 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Tags are `opencode-omp-hashline@<version>`.
 
 ## [Unreleased]
+
+## [0.1.1] - 2026-07-26
+
 ### Fixed
 
 - **Plugin failed to load in a live OpenCode session** with `Plugin export is not a
@@ -27,6 +30,10 @@ Tags are `opencode-omp-hashline@<version>`.
   (after-type|before-content|top).
 - Config precedence: defaults < global file < project file < inline options.
 - `./utils` subpath export.
+
+### Fixed
+
+- plugin entry must export only functions; add inline config (f902915b)
 
 ## [0.1.0] - 2026-07-26
 
@@ -72,5 +79,6 @@ unmaintained since 2026-05-05):
 - Block ops (`SWAP.BLK`, `DEL.BLK`, `INS.BLK.POST`) and file ops (`REM`, `MV`) are
   out of scope for v1; they require tree-sitter from the native addon.
 
-[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-hashline@0.1.0...HEAD
+[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-hashline@0.1.1...HEAD
 [0.1.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.1.0
+[0.1.1]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.1.1

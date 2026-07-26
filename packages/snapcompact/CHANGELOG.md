@@ -8,6 +8,9 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Tags are `opencode-omp-snapcompact@<version>`.
 
 ## [Unreleased]
+
+## [0.1.1] - 2026-07-26
+
 ### Fixed
 
 - Entry exported constants, which would abort OpenCode's plugin loader. Helpers moved
@@ -20,6 +23,10 @@ Tags are `opencode-omp-snapcompact@<version>`.
   `toolPrefix`, `allowForce`.
 - Config precedence: defaults < global file < project file < inline options.
 - `./utils` subpath export.
+
+### Fixed
+
+- plugin entry must export only functions; add inline config (f902915b)
 
 ## [0.1.0] - 2026-07-26
 
@@ -71,5 +78,6 @@ why the package defaults to disabled.
 - Requires `@oh-my-pi/pi-natives` (~139 MB) for rasterization. This is why the
   package ships separately from `opencode-omp-hashline`.
 
-[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-snapcompact@0.1.0...HEAD
+[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-snapcompact@0.1.1...HEAD
 [0.1.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-snapcompact@0.1.0
+[0.1.1]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-snapcompact@0.1.1

@@ -1,6 +1,6 @@
 {
   "name": "opencode-omp-hashline",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "OpenCode plugin: file-hash-anchored patch editing, backed by @oh-my-pi/hashline. Native-free (~400KB).",
   "keywords": [
