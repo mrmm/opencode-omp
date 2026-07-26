@@ -125,15 +125,12 @@ jobs:
             BARE="${TAG%@*}"
             VER="${TAG##*@}"
             DIR="packages/${BARE#opencode-omp-}"
-            NOTES=$(node -e "
-              const fs=require('fs');
-              const cl=fs.readFileSync('$DIR/CHANGELOG.md','utf8');
-              const esc='$VER'.replace(/\./g,'\\\\.');
-              const m=cl.match(new RegExp('^## \\\\['+esc+'\\\\][^\\\\n]*\\\\n([\\\\s\\\\S]*?)(?=^## \\\\[|\$)','m'));
-              const body=(m?m[1]:'').trim();
-              console.log(body ? body+'\n\n---\n\nInstall: \`bun add @mrmm/$BARE\`' : 'See CHANGELOG.');
-            ")
-            gh release create "$TAG" --title "$BARE $VER" --notes "$NOTES" || true
+            PKG=$(node -e "process.stdout.write(require('./$DIR/package.json').name)")
+            # Extraction lives in a script: the previous inline version used a
+            # `$` terminator under the `m` flag, which matches end-of-LINE, so it
+            # captured nothing and every release silently said "See CHANGELOG."
+            bun scripts/changelog-notes.ts "$DIR" "$VER" --install "$PKG" > /tmp/notes.md
+            gh release create "$TAG" --title "$BARE $VER" --notes-file /tmp/notes.md || true
           done
 
       - name: summary
