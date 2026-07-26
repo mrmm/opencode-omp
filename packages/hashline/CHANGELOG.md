@@ -9,6 +9,35 @@ Tags are `opencode-omp-hashline@<version>`.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-07-26
+
+### Fixed
+
+- **A patch failed when the tag came from a different repository than the edit.**
+  A tag carries a path relative to whichever directory the file was read from. If
+  the root differed at edit time — a session spanning two repositories, or a
+  worktree switch — that same relative path resolved elsewhere, or nowhere, and
+  the patch failed with `Cannot read <path> — does it exist?`.
+
+  The read hook now records the absolute path each tag refers to, and resolution
+  consults that before falling back to the current root. A recorded path is
+  trusted even outside the project root, since the file was demonstrably read;
+  anything unrecorded must still resolve inside the root, so traversal remains
+  refused.
+
+- **Failure messages name the path actually attempted.** The previous wording
+  gave only the relative path and guessed `does it exist?`, which also hid
+  permission and encoding errors. Errors now list every candidate tried and
+  explain that a tag is anchored to the directory it was read from.
+
+- Unresolved paths surface as a distinct `path not found` result and are counted
+  separately in telemetry (`reason=unresolved_path`) rather than being lumped in
+  with parse failures.
+
+### Fixed
+
+- **hashline**: resolve tags whose path came from another repository (75aac2dc)
+
 ### Fixed
 
 - **A patch failed when the tag came from a different repository than the edit.**
@@ -178,10 +207,11 @@ unmaintained since 2026-05-05):
 - Block ops (`SWAP.BLK`, `DEL.BLK`, `INS.BLK.POST`) and file ops (`REM`, `MV`) are
   out of scope for v1; they require tree-sitter from the native addon.
 
-[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-hashline@0.4.1...HEAD
+[Unreleased]: https://github.com/mrmm/opencode-omp/compare/opencode-omp-hashline@0.4.2...HEAD
 [0.1.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.1.0
 [0.1.1]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.1.1
 [0.2.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.2.0
 [0.3.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.3.0
 [0.4.0]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.4.0
 [0.4.1]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.4.1
+[0.4.2]: https://github.com/mrmm/opencode-omp/releases/tag/opencode-omp-hashline@0.4.2
