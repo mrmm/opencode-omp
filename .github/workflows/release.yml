@@ -68,27 +68,52 @@ jobs:
         if: steps.derive.outputs.count != '0' && !inputs.dry_run
         run: git push origin main --follow-tags
 
-      - name: publish to github packages
+      # npmjs is the primary channel: it is the only one of the two that serves
+      # anonymous reads. GitHub Packages npm returns 401 to unauthenticated
+      # clients even for public packages, so publishing there alone would force
+      # every consumer to configure a token just to install.
+      - name: publish to npmjs
+        id: npmjs
+        if: steps.derive.outputs.count != '0' && !inputs.dry_run
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "::notice::NPM_TOKEN not set — skipping npmjs. Packages remain installable from GitHub Packages (token required)."
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          {
+            echo "registry=https://registry.npmjs.org/"
+            echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}"
+          } > ~/.npmrc
+
+          for TAG in $(git tag --points-at HEAD); do
+            DIR="packages/${TAG%@*}"; DIR="${DIR/packages\/opencode-omp-/packages\/}"
+            [ -d "$DIR" ] || continue
+            echo "npmjs: publishing $TAG from $DIR"
+            (cd "$DIR" && npm publish --access public --provenance --registry https://registry.npmjs.org/) \
+              || echo "::warning::npmjs publish failed for $TAG (already published?)"
+          done
+          echo "published=true" >> "$GITHUB_OUTPUT"
+
+      # Mirror. Uses GITHUB_TOKEN, so it always works with no secret to manage.
+      - name: mirror to github packages
         if: steps.derive.outputs.count != '0' && !inputs.dry_run
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Auth for this repo's npm registry. GITHUB_TOKEN is scoped to the
-          # repo, so no long-lived secret has to exist anywhere.
           {
             echo "@mrmm:registry=https://npm.pkg.github.com"
             echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}"
           } > ~/.npmrc
 
           for TAG in $(git tag --points-at HEAD); do
-            DIR="packages/${TAG%@*}"
-            DIR="${DIR/packages\/opencode-omp-/packages\/}"
+            DIR="packages/${TAG%@*}"; DIR="${DIR/packages\/opencode-omp-/packages\/}"
             [ -d "$DIR" ] || { echo "no package dir for $TAG"; continue; }
-            echo "publishing $TAG from $DIR"
-            # --no-git-checks: the release commit is already tagged; npm's
-            # dirty/branch heuristics would reject an otherwise valid publish.
-            (cd "$DIR" && npm publish --access public) \
-              || echo "::warning::publish failed for $TAG (already published?)"
+            echo "gh-packages: publishing $TAG from $DIR"
+            (cd "$DIR" && npm publish --access public --registry https://npm.pkg.github.com) \
+              || echo "::warning::gh-packages publish failed for $TAG (already published?)"
           done
 
       - name: github releases

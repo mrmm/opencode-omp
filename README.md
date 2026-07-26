@@ -81,12 +81,20 @@ prose-heavy sessions materially worse.
 
 ## Install
 
-Published to this repository's GitHub Packages registry. Point the scope at it once:
-
 ```sh
-echo '@mrmm:registry=https://npm.pkg.github.com' >> ~/.npmrc
 bun add @mrmm/opencode-omp-hashline
 ```
+
+> **On registries.** Releases go to npmjs (primary) and are mirrored to this
+> repository's GitHub Packages registry. Prefer npmjs: GitHub Packages' npm
+> registry returns `401` to unauthenticated clients **even for public
+> packages**, so installing from the mirror requires a GitHub token with
+> `read:packages`:
+>
+> ```sh
+> echo '@mrmm:registry=https://npm.pkg.github.com' >> ~/.npmrc
+> echo "//npm.pkg.github.com/:_authToken=$(gh auth token)" >> ~/.npmrc
+> ```
 
 
 ```jsonc
