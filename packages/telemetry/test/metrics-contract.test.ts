@@ -105,9 +105,12 @@ describe("metric names the verdict report depends on", () => {
 		expect(missing).toEqual([]);
 	});
 
-	test("the verdict script reads names the plugins actually emit", () => {
+	test("the analysis module reads names the plugins actually emit", () => {
+		// Guards the seam that would otherwise fail silently: a plugin renames a
+		// metric, the reader keeps looking for the old name, and the verdict is
+		// quietly wrong rather than broken.
 		const src = readFileSync(
-			join(new URL("../../../scripts/telemetry-verdict.ts", import.meta.url).pathname),
+			join(new URL("../src/analyse.ts", import.meta.url).pathname),
 			"utf8",
 		);
 		// Every quoted metric name in the report must exist in one of the lists.

@@ -9,6 +9,15 @@ Tags are `telemetry@<version>`.
 
 ## [Unreleased]
 
+### Added
+
+- `omp-telemetry` CLI, so metrics can be inspected without opening a JSONL file
+  or being inside a repository. Subcommands: `summary`, `verdict`, `sessions`,
+  `raw`, `names`, `watch`, `path`, `clear`. All support `--json`.
+- `analyse.ts` — the aggregation and verdict logic as pure functions, separated
+  from rendering so the numbers are testable without parsing terminal output.
+- `js-tiktoken` as an optional peer: token figures are measured when it is
+  installed and estimated otherwise, with the output stating which.
 ## [0.2.0] - 2026-07-26
 
 ### Fixed

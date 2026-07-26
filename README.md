@@ -121,9 +121,13 @@ it ever saves.
 So the metrics are built to answer one question, and they will happily say no.
 
 ```sh
-bun run telemetry            # counters, percentiles
-bun run telemetry:verdict    # cost vs benefit, with a recommendation
+omp-telemetry            # counters, percentiles, gauges
+omp-telemetry verdict    # cost vs benefit, with a recommendation
+omp-telemetry watch      # follow new records live
+omp-telemetry --help     # everything else
 ```
+
+Works from any directory. Every subcommand takes `--json`.
 
 ```
 cost is 579/turn = 492 prompt (85%) + 87 tool def

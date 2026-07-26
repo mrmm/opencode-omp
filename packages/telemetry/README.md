@@ -101,6 +101,38 @@ access without recording structure.
 Everything stays on disk under `$XDG_STATE_HOME/<namespace>/`. Delete the
 directory to erase it; set `"enabled": false` to stop collecting.
 
+## CLI
+
+Installed as `omp-telemetry` (via `bun link` locally, or the package `bin` when
+installed). Works from any directory — no need to be in a repository.
+
+```sh
+omp-telemetry              # counters, histograms, gauges
+omp-telemetry verdict      # cost vs benefit + recommendation
+omp-telemetry sessions     # per-session breakdown
+omp-telemetry raw -n 30    # recent records
+omp-telemetry names        # every metric name seen
+omp-telemetry watch        # follow new records live
+omp-telemetry path         # sink locations and sizes
+omp-telemetry clear --yes  # delete collected data
+```
+
+Options: `--json`, `--since 24h`, `--service hashline`, `--namespace <ns>`,
+`--dir <path>`, `--turns-per-session <n>`.
+
+Every subcommand supports `--json`, so this composes:
+
+```sh
+omp-telemetry verdict --json | jq '.[] | {service, net, confidence}'
+```
+
+### Token counts
+
+`js-tiktoken` is an optional peer dependency. When present, token figures are
+measured; when absent they are estimated at `3.6` chars/token and the output says
+so. Keeping it optional is what lets this package ship with zero required
+dependencies.
+
 ## Reading the data
 
 Records are plain JSONL — one object per line — so `jq` is often enough:

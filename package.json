@@ -21,8 +21,8 @@
     "release:derive": "bun scripts/derive-version.ts",
     "release:preview": "bun scripts/auto-release.ts --dry-run",
     "release:auto": "bun scripts/auto-release.ts",
-    "telemetry": "bun scripts/telemetry-report.ts",
-    "telemetry:verdict": "bun scripts/telemetry-verdict.ts"
+    "telemetry": "bun packages/telemetry/src/cli.ts",
+    "telemetry:verdict": "bun packages/telemetry/src/cli.ts verdict"
   },
   "devDependencies": {
     "@types/bun": "latest",
