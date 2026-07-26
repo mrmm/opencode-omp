@@ -65,6 +65,24 @@ if [ "$PUSHING_TAGS" -eq 1 ]; then
   done
 fi
 
+# A broken build must not be pushable. This gap let a typecheck failure reach
+# main: the hook validated versions but never compiled anything.
+echo -e "${DIM}pre-push: typecheck${RST}"
+if ! bun run typecheck >/tmp/omp-typecheck.log 2>&1; then
+  echo -e "${RED}✗${RST} typecheck failed:"
+  grep -E "error TS" /tmp/omp-typecheck.log | head -10 | sed 's/^/    /'
+  exit 1
+fi
+echo -e "${GRN}✓${RST} typecheck clean"
+
+echo -e "${DIM}pre-push: tests${RST}"
+if ! bun test >/tmp/omp-test.log 2>&1; then
+  echo -e "${RED}✗${RST} tests failed:"
+  grep -E "\(fail\)|error:" /tmp/omp-test.log | head -10 | sed 's/^/    /'
+  exit 1
+fi
+echo -e "${GRN}✓${RST} $(grep -oE '[0-9]+ pass' /tmp/omp-test.log | head -1)"
+
 # Strict tag checks only when tags are actually being pushed.
 if [ "$PUSHING_TAGS" -eq 1 ]; then
   bun scripts/check-versions.ts --tags

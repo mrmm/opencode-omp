@@ -9,6 +9,11 @@ Tags are `telemetry@<version>`.
 
 ## [Unreleased]
 
+### Fixed
+
+- The pre-push hook now runs typecheck and tests, not only the version gate. A
+  typecheck failure reached `main` because the hook validated versions while
+  compiling nothing.
 ### Added
 
 - `gauge` instrument for point-in-time values such as standing cost, which must

@@ -132,10 +132,12 @@ describe("standing-cost semantics", () => {
 		t.gauge("hashline.standing_cost.tool_def_chars", 299);
 		t.gauge("hashline.standing_cost.total_chars", 772);
 		t.flush();
-		const byName = new Map(read(p).map((r) => [r.name as string, r.value as number]));
-		expect(
+		const byName = new Map<string, number>(
+			read(p).map((r) => [r.name as string, r.value as number]),
+		);
+		const parts =
 			(byName.get("hashline.standing_cost.system_prompt_chars") ?? 0) +
-				(byName.get("hashline.standing_cost.tool_def_chars") ?? 0),
-		).toBe(byName.get("hashline.standing_cost.total_chars"));
+			(byName.get("hashline.standing_cost.tool_def_chars") ?? 0);
+		expect(parts).toBe(byName.get("hashline.standing_cost.total_chars") ?? -1);
 	});
 });
