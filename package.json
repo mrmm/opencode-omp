@@ -1,0 +1,26 @@
+{
+  "name": "opencode-omp",
+  "private": true,
+  "type": "module",
+  "description": "OpenCode plugins backed by oh-my-pi: hashline patch editing + snapcompact bitmap context compression",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mrmm/opencode-omp.git"
+  },
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check": "bun run typecheck && bun test"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "bun": ">=1.3.14"
+  }
+}
