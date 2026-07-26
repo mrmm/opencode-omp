@@ -1,9 +1,9 @@
 /**
  * Patch application over the native-free upstream path.
  *
- * Verification gate V6d established that `input` + `format` + `apply` import no
+ * measurement established that `input` + `format` + `apply` import no
  * native code, unlike `Patcher` which pulls `Recovery` -> `@oh-my-pi/pi-natives`
- * (139MB, for a single `diffLineRuns` call). Gate V6e confirmed this path applies
+ * (139MB, for a single `diffLineRuns` call). Testing confirmed this path applies
  * SWAP + INS.POST + DEL correctly in one patch.
  *
  * Trade: no 3-way-merge recovery. A stale anchor is rejected rather than merged —

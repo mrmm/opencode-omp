@@ -7,11 +7,11 @@ import {
 	shouldCompact,
 } from "../src/density.ts";
 
-/** Anthropic shape measured during verification gate V5. */
+/** Anthropic shape measured during measurement. */
 const ANTHROPIC = frameEconomics(13916, 3293); // 4.23 chars/token
 const GOOGLE = frameEconomics(13916, 1120); // 12.43 chars/token
 
-/** Corpora matching the V5 measurement table. */
+/** Corpora matching the measured table. */
 const JSON_DENSE = JSON.stringify(
 	Array.from({ length: 300 }, (_, i) => ({
 		id: i,
@@ -36,13 +36,13 @@ const TOOL_OUTPUT = Array.from(
 ).join("\n");
 
 describe("density — real tokenizer (AC-2)", () => {
-	test("JSON measures dense, matching the V5 finding (~2.2 chars/token)", () => {
+	test("JSON measures dense, matching the measured table (~2.2 chars/token)", () => {
 		const d = density(JSON_DENSE);
 		expect(d.ratio).toBeGreaterThan(1.8);
 		expect(d.ratio).toBeLessThan(2.8);
 	});
 
-	test("prose measures sparse, matching the V5 finding (~5.1 chars/token)", () => {
+	test("prose measures sparse, matching the measured table (~5.1 chars/token)", () => {
 		const d = density(PROSE_SPARSE);
 		expect(d.ratio).toBeGreaterThan(4.3);
 	});

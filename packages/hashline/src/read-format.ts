@@ -1,8 +1,7 @@
 /**
  * Parser for OpenCode's rendered Read tool output.
  *
- * This shape is VERIFIED, not inferred. Gate V8 of the port's verification phase
- * predicted the annotation hashes of a live read byte-for-byte (8/8 exact:
+ * This shape is VERIFIED, not inferred: a reconstruction of it predicted the annotation hashes of a live read byte-for-byte (8/8 exact:
  * 428 866 cbe f10 b50 9eb 150 9c0), which only holds if the reconstruction below
  * matches the real pre-hook string exactly.
  *

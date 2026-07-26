@@ -1,7 +1,6 @@
 # Spec — `opencode-omp-hashline`
 
 - **Status**: draft
-- **Run**: `2026-07-26-port-oh-my-pi-hashline-snapcompact-to-opencode`
 - **Upstream**: `@oh-my-pi/hashline@17.1.3` (MIT, Can Boluk)
 
 ## 1. Context
@@ -49,18 +48,18 @@ Depend on the upstream package; do not reimplement. Restore the original's two i
 1. **Anchor on file content, never on rendered output.**
 2. **One 4-hex tag per file** + plain line numbers — not a hash per line.
 
-## 2. Verified constraints (evidence, not assumption)
+## 2. Verified constraints
 
-| ID | Finding | Evidence |
-|---|---|---|
-| V6 | Upstream installs + works as a normal npm dep; stale-tag rejection fires | `tag: 2172`, `op: update`, `"hash #0000 is not from this session"` |
-| V6c | `Patcher` transitively requires a 139MB native addon | `patcher.ts:41` imports `Recovery` → `@oh-my-pi/pi-natives` |
-| V6d | **Native-free path exists at ~400KB** | `input` + `format` + `apply` import no natives |
-| V6e | Native-free path applies SWAP + INS.POST + DEL correctly in one patch | `FEEF` → 4 edits → expected output byte-exact |
-| V7 | Plugins may register tools with zod args and return attachments | `tool.d.ts` `ToolDefinition` / `ToolResult` |
-| V8 | **Pre-hook Read format proven, not inferred** | Predicted 8/8 hashes exactly: `428 866 cbe f10 b50 9eb 150 9c0` |
+| Finding | Evidence |
+|---|---|
+| Upstream installs + works as a normal npm dep; stale-tag rejection fires | `tag: 2172`, `op: update`, `"hash #0000 is not from this session"` |
+| `Patcher` transitively requires a 139MB native addon | `patcher.ts:41` imports `Recovery` → `@oh-my-pi/pi-natives` |
+| **Native-free path exists at ~400KB** | `input` + `format` + `apply` import no natives |
+| Native-free path applies SWAP + INS.POST + DEL correctly in one patch | `FEEF` → 4 edits → expected output byte-exact |
+| Plugins may register tools with zod args and return attachments | `tool.d.ts` `ToolDefinition` / `ToolResult` |
+| **Pre-hook Read format proven, not inferred** | Predicted 8/8 hashes exactly: `428 866 cbe f10 b50 9eb 150 9c0` |
 
-### V8 — exact Read output format
+### Exact Read output format
 
 ```
 <path>{absolutePath}</path>
@@ -80,7 +79,7 @@ directly follows the last content line corrupts every final-line edit.
 ### Size decision
 
 | Path | Size | Capability | Chosen |
-|---|---|---|---|
+|---|---|---|
 | Full `Patcher` | 143 MB | 3-way-merge recovery on stale anchors | ✗ |
 | `input`+`format`+`apply` | **400 KB** | parse, hash, apply; stale → reject | **✓ default** |
 
@@ -224,6 +223,6 @@ upstream's `prompt.md` semantics, trimmed to v1's op subset.
 
 ## 7. Open questions
 
-- **V9 (deferred)**: upstream `SnapshotStore` records tags per path for recovery. v1 is
+- **Deferred**: upstream `SnapshotStore` records tags per path for recovery. v1 is
   stateless — recompute the hash on edit and compare. Equivalent for staleness detection;
   only recovery is lost. Revisit if recovery is added.

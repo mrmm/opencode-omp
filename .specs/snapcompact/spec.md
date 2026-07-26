@@ -1,7 +1,6 @@
 # Spec — `opencode-omp-snapcompact`
 
 - **Status**: draft
-- **Run**: `2026-07-26-port-oh-my-pi-hashline-snapcompact-to-opencode`
 - **Upstream**: `@oh-my-pi/snapcompact@17.1.3` (MIT, Can Boluk)
 
 ## 1. Context
@@ -40,15 +39,15 @@ prose-heavy sessions materially worse.
 
 ## 2. Verified constraints
 
-| ID | Finding | Evidence |
-|---|---|---|
-| V1 | OpenCode `Part` union accepts image content | `types.gen.d.ts:345` — `FilePart { type:"file", mime, url }` |
-| V3 | Upstream installs standalone | `@17.1.3`, 51 pkgs, 4.3s, 180MB (139MB = `pi-natives-darwin-arm64`) |
-| V4 | Renders real PNGs outside omp | 1568×384px, 2-bit colormap, 9333 bytes, magic `89504e470d0a1a0a` |
-| V4b | Output is legible | Frame rendered, read back visually, JSON recovered correctly |
-| V4c | Height hugs content | 24 of 98 rows used → 384px not 1568px; blank rows never billed |
-| V5 | Economics are conditional | Table above |
-| V7 | Tools may return image attachments | `ToolResult.attachments[]` — path independent of message-transform |
+| Finding | Evidence |
+|---|---|
+| OpenCode `Part` union accepts image content | `types.gen.d.ts:345` — `FilePart { type:"file", mime, url }` |
+| Upstream installs standalone | `@17.1.3`, 51 pkgs, 4.3s, 180MB (139MB = `pi-natives-darwin-arm64`) |
+| Renders real PNGs outside omp | 1568×384px, 2-bit colormap, 9333 bytes, magic `89504e470d0a1a0a` |
+| Output is legible | Frame rendered, read back visually, JSON recovered correctly |
+| Height hugs content | 24 of 98 rows used → 384px not 1568px; blank rows never billed |
+| Economics are conditional | Table above |
+| Tools may return image attachments | `ToolResult.attachments[]` — path independent of message-transform |
 
 ### API shape (corrected during verification)
 
@@ -159,7 +158,7 @@ And no frames are produced
 }
 ```
 
-### Tool — `snapcompact_render` (primary, V7-verified)
+### Tool — `snapcompact_render` (primary, verified)
 
 ```ts
 {
@@ -173,9 +172,9 @@ And no frames are produced
 }
 ```
 
-### Hook — `experimental.chat.messages.transform` (secondary, gated on V2)
+### Hook — `experimental.chat.messages.transform` (secondary, unverified at runtime)
 
-Auto-compaction of discarded history. **V2 — whether this hook fires and permits part
+Auto-compaction of discarded history. **Whether this hook fires and permits part
 mutation at runtime — is unverified.** Therefore:
 
 - ships behind `mode: "auto-compact"`
@@ -197,7 +196,7 @@ export function toAttachments(frames: Frame[]): ToolAttachment[];
 |---|---|
 | Renders unprofitable content | Density gate (AC-1), enforced by default |
 | 139MB native dep surprises users | Separate package; documented in README |
-| V2 hook never fires | Tool path is primary and independently verified |
+| Hook never fires | Tool path is primary and independently verified |
 | Vision model misreads frames | Upstream geometry is eval-tuned; do not alter |
 | Provider changes image billing | Shape table is data, not logic — updatable |
 

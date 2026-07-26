@@ -47,20 +47,20 @@ This repo restores the original invariants.
 
 ## Verification first
 
-Nothing here was built on assumption. Every design decision traces to a measured gate:
+Nothing here was built on assumption. Every design decision traces to a measurement:
 
-| Gate | Question | Result |
-|---|---|---|
-| V1 | Can a plugin inject images? | ✅ `Part` union includes `FilePart{type,mime,url}` |
-| V3 | Does snapcompact install standalone? | ✅ 51 pkgs, 4.3 s |
-| V4 | Does it render outside omp? | ✅ 1568×384 PNG, legible — text read back out |
-| V5 | Is bitmap framing a token win? | ⚠️ **Conditional** — see below |
-| V6 | Is hashline usable as a plain dep? | ✅ Two paths: 143 MB vs **400 KB** |
-| V7 | Can plugins register tools + attachments? | ✅ `ToolResult.attachments[]` |
-| V8 | Is the Read format known exactly? | ✅ **Proven** — predicted 8/8 hashes |
-| V10 | Does omo conflict? | ✅ No clash |
+| Question | Result |
+|---|---|
+| Can a plugin inject images? | ✅ `Part` union includes `FilePart{type,mime,url}` |
+| Does snapcompact install standalone? | ✅ 51 pkgs, 4.3 s |
+| Does it render outside omp? | ✅ 1568×384 PNG, legible — text read back out |
+| Is bitmap framing a token win? | ⚠️ **Conditional** — see below |
+| Is hashline usable as a plain dep? | ✅ Two paths: 143 MB vs **400 KB** |
+| Can plugins register tools + attachments? | ✅ `ToolResult.attachments[]` |
+| Is the Read format known exactly? | ✅ **Proven** — predicted 8/8 hashes |
+| Does omo conflict? | ✅ No clash |
 
-### V5 — the finding that shaped the design
+### The finding that shaped the design
 
 A bitmap frame yields a **fixed** chars-per-token rate. Text yields whatever the
 tokenizer gives. Measured with `js-tiktoken`:

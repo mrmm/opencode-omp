@@ -34,11 +34,11 @@ maybe("renderFrames — real PNG output", () => {
 
 	test("data is already base64 — must not be double-encoded", async () => {
 		const frames = await mod.renderFrames(dense, {}, 1);
-		// Verified in V4: raw `data` starts with the base64 PNG prefix "iVBO".
+		// Verified: raw `data` starts with the base64 PNG prefix "iVBO".
 		expect(frames[0]!.data.slice(0, 4)).toBe("iVBO");
 	});
 
-	test("height hugs content — blank rows are never billed (V4c)", async () => {
+	test("height hugs content — blank rows are never billed", async () => {
 		const frames = await mod.renderFrames("one short line", {}, 1);
 		const buf = Buffer.from(frames[0]!.data, "base64");
 		const height = buf.readUInt32BE(20);
@@ -60,7 +60,7 @@ maybe("renderFrames — real PNG output", () => {
 });
 
 maybe("toAttachments", () => {
-	test("emits OpenCode-shaped image attachments (V1/V7)", async () => {
+	test("emits OpenCode-shaped image attachments", async () => {
 		const frames = await mod.renderFrames("some dense text here", {}, 1);
 		const [att] = mod.toAttachments(frames);
 		expect(att).toBeDefined();

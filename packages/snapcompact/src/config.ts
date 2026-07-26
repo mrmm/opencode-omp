@@ -9,10 +9,10 @@ export type ShapeName = "anthropic" | "google" | "openai" | "legacy";
 export interface SnapcompactConfig {
 	/**
 	 * Off by default. The economics are conditional — framing prose costs ~57%
-	 * MORE than sending text (verification gate V5). Opt in per project.
+	 * MORE than sending text (measurement). Opt in per project.
 	 */
 	enabled: boolean;
-	/** "tool" is verified. "auto-compact" depends on unverified gate V2. */
+	/** "tool" is verified. "auto-compact" depends on an unverified runtime hook. */
 	mode: SnapcompactMode;
 	/** Fractional headroom required over break-even. */
 	densityMargin: number;

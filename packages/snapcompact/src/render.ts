@@ -1,7 +1,7 @@
 /**
  * Frame rendering over upstream `@oh-my-pi/snapcompact`.
  *
- * API shape corrected during verification (V4): `render` is POSITIONAL and async —
+ * API shape corrected during verification: `render` is POSITIONAL and async —
  * `render(text, shape, size)`, not an options object — and returns `{ data, cols,
  * rows, chars }` where `data` is ALREADY base64. Double-encoding it yields
  * `6956424f` ("iVBO") instead of the PNG magic `89504e470d0a1a0a`.
@@ -133,7 +133,7 @@ export async function renderFrames(
 	return out;
 }
 
-/** Convert frames into OpenCode tool attachments (V7-verified path). */
+/** Convert frames into OpenCode tool attachments (verified path). */
 export function toAttachments(frames: Frame[]): ToolAttachment[] {
 	return frames.map((f) => ({
 		type: "file" as const,

@@ -8,7 +8,7 @@ import {
 } from "../src/read-format.ts";
 
 /**
- * Fixtures captured from LIVE OpenCode Read output during verification gate V8.
+ * Fixtures captured from LIVE OpenCode Read output during measurement.
  * The reconstruction was proven exact: predicted annotation hashes matched the
  * live plugin 8/8 (428 866 cbe f10 b50 9eb 150 9c0).
  */
@@ -55,7 +55,7 @@ describe("parseReadOutput — complete read", () => {
 		expect(parsed.lines.some((l) => l.text.includes("End of file"))).toBe(false);
 	});
 
-	test("captures the EOF footer and total (V8 refinement)", () => {
+	test("captures the EOF footer and total (footer refinement)", () => {
 		expect(parsed.footer).toBe("(End of file - total 5 lines)");
 		expect(parsed.paginated).toBe(false);
 		expect(parsed.totalLines).toBe(5);

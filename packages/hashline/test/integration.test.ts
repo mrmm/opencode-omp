@@ -16,7 +16,7 @@ import { createHashlinePlugin } from "../src/index.ts";
 import { computeFileHash } from "../src/patch.ts";
 import { parseReadOutput } from "../src/read-format.ts";
 
-/** Reproduce OpenCode's Read render (shape proven exact by gate V8). */
+/** Reproduce OpenCode's Read render (shape proven exact by gate ). */
 function renderRead(absPath: string, content: string, offset = 1, limit = 2000): string {
 	const lines = content.split("\n");
 	const total = lines.length;
