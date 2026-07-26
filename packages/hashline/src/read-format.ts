@@ -141,22 +141,32 @@ export function parseReadOutput(rendered: string): ParsedRead {
 	};
 }
 
+/** Where the tag line is placed within rendered Read output. */
+export type TagPlacement = "after-type" | "before-content" | "top";
+
 /**
- * Insert a tag line into rendered Read output, immediately after `<type>...</type>`
- * (or before `<content>` when the type element is absent).
+ * Insert a tag line into rendered Read output.
  *
  * Content rows are deliberately left untouched: OpenCode's native `N: ` numbering
  * is already the addressing scheme the hashline patch language consumes. Adding a
  * per-line hash would cost ~146x more tokens for no additional capability.
  */
-export function injectTag(rendered: string, tagLine: string): string {
-	const rows = rendered.split("\n");
-	let anchor = rows.findIndex((r) => r === "<content>");
-	if (anchor === -1) return `${tagLine}\n${rendered}`;
+export function injectTag(
+	rendered: string,
+	tagLine: string,
+	placement: TagPlacement = "after-type",
+): string {
+	if (placement === "top") return `${tagLine}\n${rendered}`;
 
-	// Prefer sitting directly under <type> when present.
-	const typeIdx = rows.findIndex((r) => /^<type>.*<\/type>$/.test(r));
-	if (typeIdx !== -1 && typeIdx < anchor) anchor = typeIdx + 1;
+	const rows = rendered.split("\n");
+	const contentIdx = rows.findIndex((r) => r === "<content>");
+	if (contentIdx === -1) return `${tagLine}\n${rendered}`;
+
+	let anchor = contentIdx;
+	if (placement === "after-type") {
+		const typeIdx = rows.findIndex((r) => /^<type>.*<\/type>$/.test(r));
+		if (typeIdx !== -1 && typeIdx < contentIdx) anchor = typeIdx + 1;
+	}
 
 	rows.splice(anchor, 0, tagLine);
 	return rows.join("\n");

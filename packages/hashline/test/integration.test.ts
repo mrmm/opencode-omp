@@ -34,7 +34,7 @@ function renderRead(absPath: string, content: string, offset = 1, limit = 2000):
 }
 
 async function bootPlugin(root: string) {
-	const factory = createHashlinePlugin({ enabled: true, injectSystemPrompt: true });
+	const factory = createHashlinePlugin({ enabled: true, promptStyle: "full" });
 	return factory({
 		directory: root,
 		worktree: root,

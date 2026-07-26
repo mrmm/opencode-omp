@@ -4,6 +4,8 @@ import { join } from "node:path";
 
 export type SnapcompactMode = "tool" | "auto-compact";
 
+export type ShapeName = "anthropic" | "google" | "openai" | "legacy";
+
 export interface SnapcompactConfig {
 	/**
 	 * Off by default. The economics are conditional — framing prose costs ~57%
@@ -18,6 +20,16 @@ export interface SnapcompactConfig {
 	minChars: number;
 	/** null → provider image budget. */
 	maxFrames: number | null;
+	/** Force a provider shape instead of resolving from the model. */
+	shapeOverride: ShapeName | null;
+	/** Register the render tool (the one that writes frames). */
+	registerRenderTool: boolean;
+	/** Register the estimate tool (read-only, always safe). */
+	registerEstimateTool: boolean;
+	/** Prefix for tool names, so they can be renamed to avoid collisions. */
+	toolPrefix: string;
+	/** Allow callers to pass force:true and bypass the density gate. */
+	allowForce: boolean;
 	debug: boolean;
 }
 
@@ -27,6 +39,11 @@ export const DEFAULT_CONFIG: SnapcompactConfig = {
 	densityMargin: 0.1,
 	minChars: 2000,
 	maxFrames: null,
+	shapeOverride: null,
+	registerRenderTool: true,
+	registerEstimateTool: true,
+	toolPrefix: "snapcompact",
+	allowForce: true,
 	debug: false,
 };
 
@@ -82,19 +99,45 @@ function stripJsonc(text: string): string {
 	return out.replace(/,(\s*[}\]])/g, "$1");
 }
 
-function sanitize(raw: unknown): Partial<SnapcompactConfig> {
+/** Accept only known keys with expected types; drop anything else silently. */
+export function sanitize(raw: unknown): Partial<SnapcompactConfig> {
 	if (!raw || typeof raw !== "object") return {};
 	const r = raw as Record<string, unknown>;
 	const out: Partial<SnapcompactConfig> = {};
-	if (typeof r.enabled === "boolean") out.enabled = r.enabled;
+
+	for (const k of [
+		"enabled",
+		"registerRenderTool",
+		"registerEstimateTool",
+		"allowForce",
+		"debug",
+	] as const) {
+		if (typeof r[k] === "boolean") out[k] = r[k] as boolean;
+	}
 	if (r.mode === "tool" || r.mode === "auto-compact") out.mode = r.mode;
-	if (typeof r.densityMargin === "number" && r.densityMargin >= 0 && r.densityMargin < 1)
+	if (typeof r.densityMargin === "number" && r.densityMargin >= 0 && r.densityMargin < 1) {
 		out.densityMargin = r.densityMargin;
-	if (typeof r.minChars === "number" && r.minChars >= 0) out.minChars = r.minChars;
+	}
+	if (typeof r.minChars === "number" && r.minChars >= 0) {
+		out.minChars = Math.floor(r.minChars);
+	}
 	if (r.maxFrames === null) out.maxFrames = null;
-	else if (typeof r.maxFrames === "number" && r.maxFrames > 0)
+	else if (typeof r.maxFrames === "number" && r.maxFrames > 0) {
 		out.maxFrames = Math.floor(r.maxFrames);
-	if (typeof r.debug === "boolean") out.debug = r.debug;
+	}
+	if (
+		r.shapeOverride === "anthropic" ||
+		r.shapeOverride === "google" ||
+		r.shapeOverride === "openai" ||
+		r.shapeOverride === "legacy"
+	) {
+		out.shapeOverride = r.shapeOverride;
+	} else if (r.shapeOverride === null) {
+		out.shapeOverride = null;
+	}
+	if (typeof r.toolPrefix === "string" && /^[a-z][a-z0-9_]*$/.test(r.toolPrefix)) {
+		out.toolPrefix = r.toolPrefix;
+	}
 	return out;
 }
 
@@ -111,9 +154,30 @@ function readConfigFile(dir: string): Partial<SnapcompactConfig> {
 	return {};
 }
 
-/** Global config, then project config; project wins. */
+/**
+ * Resolve config by precedence, most specific last:
+ *
+ *   defaults
+ *     < ~/.config/opencode/opencode-omp-snapcompact.jsonc   (global file)
+ *     < <project>/opencode-omp-snapcompact.jsonc            (project file)
+ *     < inline options in opencode.jsonc                    (highest)
+ *
+ * Inline options win so a setting can be flipped in opencode.jsonc without
+ * touching any file in the plugin.
+ */
+export function resolveConfig(
+	projectDir?: string,
+	inline?: unknown,
+): SnapcompactConfig {
+	return {
+		...DEFAULT_CONFIG,
+		...readConfigFile(join(homedir(), ".config", "opencode")),
+		...(projectDir ? readConfigFile(projectDir) : {}),
+		...sanitize(inline),
+	};
+}
+
+/** Back-compat alias. */
 export function loadConfig(projectDir?: string): SnapcompactConfig {
-	const global = readConfigFile(join(homedir(), ".config", "opencode"));
-	const project = projectDir ? readConfigFile(projectDir) : {};
-	return { ...DEFAULT_CONFIG, ...global, ...project };
+	return resolveConfig(projectDir);
 }

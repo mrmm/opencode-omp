@@ -8,6 +8,18 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Tags are `opencode-omp-snapcompact@<version>`.
 
 ## [Unreleased]
+### Fixed
+
+- Entry exported constants, which would abort OpenCode's plugin loader. Helpers moved
+  to `opencode-omp-snapcompact/utils`; guarded by an export-contract test.
+
+### Added
+
+- Inline configuration through opencode.jsonc's array form.
+- New options: `shapeOverride`, `registerRenderTool`, `registerEstimateTool`,
+  `toolPrefix`, `allowForce`.
+- Config precedence: defaults < global file < project file < inline options.
+- `./utils` subpath export.
 
 ## [0.1.0] - 2026-07-26
 

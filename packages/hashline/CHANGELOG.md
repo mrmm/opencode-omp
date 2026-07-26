@@ -8,6 +8,25 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 Tags are `opencode-omp-hashline@<version>`.
 
 ## [Unreleased]
+### Fixed
+
+- **Plugin failed to load in a live OpenCode session** with `Plugin export is not a
+  function`. OpenCode's loader calls every export of a plugin entry as a Plugin
+  factory, so the constant exports (`DEFAULT_CONFIG`, `HASHLINE_SYSTEM_PROMPT`)
+  aborted loading. Entry now exports only Plugin-compatible values; helpers moved to
+  `opencode-omp-hashline/utils`. Guarded by a test asserting every entry export is a
+  function.
+
+### Added
+
+- Inline configuration through opencode.jsonc's array form, so behaviour is tunable
+  without editing plugin source:
+  `["opencode-omp-hashline", { "debug": true, "promptStyle": "brief" }]`
+- New options: `annotateReads`, `registerTool`, `toolName`, `includeOnly`,
+  `maxLines`, `promptStyle` (full|brief|none), `tagPosition`
+  (after-type|before-content|top).
+- Config precedence: defaults < global file < project file < inline options.
+- `./utils` subpath export.
 
 ## [0.1.0] - 2026-07-26
 
