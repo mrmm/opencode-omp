@@ -239,6 +239,62 @@ export function buildPlans(): Plan[] {
 	return plans;
 }
 
+/** Fold commits into a dated changelog section, preserving manual [Unreleased] prose. */
+/** Repository the changelog compare/tag links point at. */
+export const REPO = "https://github.com/mrmm/opencode-omp";
+
+export function renderChangelog(existing: string, plan: Plan): string {
+	const today = new Date().toISOString().slice(0, 10);
+	const sections = changelogSections(plan.commits);
+
+	const manual = (
+		existing.match(/^##\s*\[unreleased\][^\n]*\n([\s\S]*?)(?=^##\s*\[|\Z)/im)?.[1] ?? ""
+	).trim();
+
+	const generated: string[] = [];
+
+	// A dependency-only bump carries no commits of its own, which previously
+	// rendered a version heading with nothing under it. Explain why it shipped.
+	if (plan.commits.length === 0 && plan.reason) {
+		generated.push("### Changed", "", `- ${plan.reason}. No change to this package's own behaviour; released`,
+			"  so the published artifact carries the current shared code.", "");
+	}
+
+	for (const [label, commits] of sections) {
+		generated.push(`### ${label}`, "");
+		for (const c of commits) {
+			const scope = c.scope ? `**${c.scope}**: ` : "";
+			generated.push(`- ${scope}${c.subject} (${c.sha})`);
+		}
+		generated.push("");
+	}
+
+	// Manual prose wins the top slot; generated commit list follows so nothing
+	// that actually shipped can be silently omitted.
+	const body = [manual, generated.join("\n").trim()].filter(Boolean).join("\n\n");
+
+	let out = existing.replace(
+		/^##\s*\[unreleased\][^\n]*$/im,
+		`## [Unreleased]\n\n## [${plan.next}] - ${today}\n\n${body}`,
+	);
+
+	// Drop the now-duplicated manual block that sat under the old [Unreleased].
+	if (manual) {
+		const dupe = `## [${plan.next}] - ${today}\n\n${body}\n${manual}`;
+		if (out.includes(dupe)) out = out.replace(dupe, `## [${plan.next}] - ${today}\n\n${body}\n`);
+	}
+
+	out = out
+		.replace(/^\[unreleased\]:.*$/im, `[Unreleased]: ${REPO}/compare/${plan.tagName}@${plan.next}...HEAD`)
+		.replace(/\n{3,}/g, "\n\n")
+		.replace(/\n*$/, "\n");
+
+	if (!new RegExp(`^\\[${plan.next?.replace(/\./g, "\\.")}\\]:`, "im").test(out)) {
+		out += `[${plan.next}]: ${REPO}/releases/tag/${plan.tagName}@${plan.next}\n`;
+	}
+	return out;
+}
+
 /** Group commits into changelog sections. */
 export function changelogSections(commits: Commit[]): Map<string, Commit[]> {
 	const LABEL: Record<string, string> = {
