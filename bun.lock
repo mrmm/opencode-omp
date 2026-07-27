@@ -52,13 +52,6 @@
         "js-tiktoken",
       ],
     },
-    "packages/tui-demo": {
-      "name": "@mrmm/opencode-tui-demo",
-      "version": "0.0.0",
-      "peerDependencies": {
-        "@opencode-ai/plugin": ">=1.18.0",
-      },
-    },
   },
   "packages": {
     "@ai-sdk/provider": ["@ai-sdk/provider@3.0.8", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-oGMAgGoQdBXbZqNG0Ze56CHjDZ1IDYOwGYxYjO5KLSlz5HiNQ9udIXsPZ61VWaHGZ5XW/jyjmr6t2xz2jGVwbQ=="],
@@ -76,8 +69,6 @@
     "@mrmm/opencode-omp-hashline": ["@mrmm/opencode-omp-hashline@workspace:packages/hashline"],
 
     "@mrmm/opencode-omp-snapcompact": ["@mrmm/opencode-omp-snapcompact@workspace:packages/snapcompact"],
-
-    "@mrmm/opencode-tui-demo": ["@mrmm/opencode-tui-demo@workspace:packages/tui-demo"],
 
     "@mrmm/telemetry": ["@mrmm/telemetry@workspace:packages/telemetry"],
 
